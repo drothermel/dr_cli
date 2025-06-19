@@ -71,3 +71,16 @@ def test_diagnostic_pattern_matches_valid_warning_lines(line: str) -> None:
 def test_diagnostic_pattern_rejects_invalid_lines(line: str) -> None:
     """Test that diagnostic pattern rejects invalid lines."""
     assert_pattern_not_matches(DIAGNOSTIC_PATTERN, line)
+
+
+@pytest.mark.parametrize("line", [
+    "file.py:10: note: This is a note",
+    "file.py:10:5: note: This is a note with column",
+    "path/to/file.py:10: note: See reference implementation",
+    "file.py:10: note: Possible overload variants:",
+])
+def test_note_pattern_matches_valid_note_lines(line: str) -> None:
+    """Test that note pattern matches valid note lines."""
+    match = assert_pattern_matches(NOTE_PATTERN, line)
+    assert match.group("message") is not None
+    assert match.group("file") is not None
