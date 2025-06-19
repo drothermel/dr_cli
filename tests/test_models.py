@@ -167,3 +167,42 @@ def test_results_counts_with_empty_diagnostics():
     
     assert empty_results.error_count == 0
     assert empty_results.warning_count == 0
+
+
+def test_results_files_with_errors_deduplicates_files(sample_results):
+    """Test that files_with_errors deduplicates file names."""
+    # sample_results has errors in file1.py and file2.py
+    files_with_errors = sample_results.files_with_errors
+    
+    assert len(files_with_errors) == 2
+    assert "file1.py" in files_with_errors
+    assert "file2.py" in files_with_errors
+
+
+def test_results_files_with_errors_excludes_warnings_only():
+    """Test that files with only warnings don't appear in files_with_errors."""
+    warning_only = MypyDiagnostic(
+        location=Location(file="warning_file.py", line=10),
+        level=MessageLevel.WARNING,
+        message="Only warning",
+        error_code="warning-only"
+    )
+    
+    results = MypyResults(
+        diagnostics=[warning_only],
+        standalone_notes=[],
+        files_checked=1
+    )
+    
+    assert len(results.files_with_errors) == 0
+
+
+def test_results_files_with_errors_empty_case():
+    """Test files_with_errors with no diagnostics."""
+    empty_results = MypyResults(
+        diagnostics=[],
+        standalone_notes=[],
+        files_checked=0
+    )
+    
+    assert len(empty_results.files_with_errors) == 0
