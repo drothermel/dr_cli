@@ -249,3 +249,44 @@ def test_format_summary_with_different_counts(error_count, warning_count, file_c
     )
     
     assert results.format_summary() == expected
+
+
+def test_diagnostic_notes_initialization():
+    """Test that diagnostic notes list is initialized correctly."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="test.py", line=10),
+        level=MessageLevel.ERROR,
+        message="Test error",
+        error_code="test-error"
+    )
+    
+    assert diagnostic.notes == []
+
+
+def test_diagnostic_with_notes():
+    """Test diagnostic with notes added."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="test.py", line=10),
+        level=MessageLevel.ERROR,
+        message="Test error",
+        error_code="test-error",
+        notes=["This is a helpful note", "Another note for context"]
+    )
+    
+    assert len(diagnostic.notes) == 2
+    assert "This is a helpful note" in diagnostic.notes
+    assert "Another note for context" in diagnostic.notes
+
+
+def test_diagnostic_notes_can_be_added():
+    """Test that notes can be added to diagnostic after creation."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="test.py", line=10),
+        level=MessageLevel.ERROR,
+        message="Test error",
+        error_code="test-error"  
+    )
+    
+    diagnostic.notes.append("Added note")
+    assert len(diagnostic.notes) == 1
+    assert diagnostic.notes[0] == "Added note"
