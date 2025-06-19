@@ -46,3 +46,15 @@ def test_diagnostic_pattern_matches_valid_error_lines(line: str) -> None:
     """Test that diagnostic pattern matches valid error lines."""
     match = assert_pattern_matches(DIAGNOSTIC_PATTERN, line)
     assert match.group("level") == "error"
+
+
+@pytest.mark.parametrize("line", [
+    "file.py:10: warning: Message [code]",
+    "file.py:10:5: warning: Message [code]",
+    "path/to/file.py:10: warning: Unused variable 'x'  [unused-var]",
+    "file.py:10: warning: Message without code",
+])
+def test_diagnostic_pattern_matches_valid_warning_lines(line: str) -> None:
+    """Test that diagnostic pattern matches valid warning lines."""
+    match = assert_pattern_matches(DIAGNOSTIC_PATTERN, line)
+    assert match.group("level") == "warning"
