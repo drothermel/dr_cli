@@ -59,3 +59,16 @@ This is a Python library project using modern tooling:
 - Uses `uv` with lockfile for reproducible environments
 - Development dependencies clearly separated from runtime
 - Optional ML testing dependencies for specialized use cases
+
+## Reference Documentation
+
+### Symlinked Files
+The following documentation files are **symlinks** to an external reference repository:
+- `docs/pydantic-reference.md` → External Pydantic reference
+- `docs/mypy-reference.md` → External mypy reference
+
+**Important for Claude:**
+- Changes to these files will NOT appear in `git status` for this repository
+- Do NOT attempt to commit changes to these files in this repo
+- The user handles committing updates to the external reference repository
+- These files can be read and updated normally, but git operations are handled externally
