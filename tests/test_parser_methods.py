@@ -81,3 +81,19 @@ class TestParserMethods:
         
         # Should not crash, note is just ignored for association
         assert len(parser.diagnostics) == 0
+    
+    def test_summary_parsing_updates_state(self, parser: MypyOutputParser) -> None:
+        """Test summary line updates files_checked state."""
+        line = "Found 1 error in 1 file (checked 5 source files)"
+        result = parser._try_parse_summary(line)
+        
+        assert result is True
+        assert parser.files_checked == 5
+    
+    def test_summary_parsing_plural_files(self, parser: MypyOutputParser) -> None:
+        """Test summary with plural files updates state correctly."""
+        line = "Found 3 errors in 2 files (checked 10 source files)"
+        result = parser._try_parse_summary(line)
+        
+        assert result is True
+        assert parser.files_checked == 10
