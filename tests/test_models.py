@@ -329,3 +329,48 @@ def test_location_with_end_position():
     assert location.column == 13
     assert location.end_line == 43
     assert location.end_column == 20
+
+
+def test_results_model_dump_includes_computed_properties(sample_results):
+    """Test that model_dump includes computed properties."""
+    data = sample_results.model_dump()
+    
+    # Verify computed properties are included
+    assert 'error_count' in data
+    assert 'warning_count' in data
+    assert 'files_with_errors' in data
+    assert data['error_count'] == 2
+    assert data['warning_count'] == 1
+    assert len(data['files_with_errors']) == 2
+
+
+def test_results_json_serialization_includes_computed_fields(sample_results):
+    """Test that JSON serialization includes computed fields."""
+    json_str = sample_results.model_dump_json()
+    
+    # Verify computed fields appear in JSON
+    assert '"error_count":2' in json_str
+    assert '"warning_count":1' in json_str
+    assert '"files_with_errors":[' in json_str
+
+
+def test_diagnostic_serialization():
+    """Test that MypyDiagnostic serializes correctly."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="test.py", line=10, column=5),
+        level=MessageLevel.ERROR,
+        message="Test error",
+        error_code="test-error",
+        notes=["Test note"]
+    )
+    
+    data = diagnostic.model_dump()
+    
+    # Verify all fields are present
+    assert data['location']['file'] == "test.py"
+    assert data['location']['line'] == 10
+    assert data['location']['column'] == 5
+    assert data['level'] == "error"
+    assert data['message'] == "Test error"
+    assert data['error_code'] == "test-error"
+    assert data['notes'] == ["Test note"]

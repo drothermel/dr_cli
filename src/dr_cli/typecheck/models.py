@@ -1,7 +1,7 @@
 """Pydantic models for mypy output parsing."""
 
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, computed_field
 
 
 class MessageLevel(str, Enum):
@@ -64,26 +64,31 @@ class MypyResults(BaseModel):
     standalone_notes: list[MypyNote]
     files_checked: int
 
+    @computed_field
     @property
     def errors(self) -> list[MypyDiagnostic]:
         """Get all error diagnostics."""
         return [d for d in self.diagnostics if d.level == MessageLevel.ERROR]
 
+    @computed_field
     @property
     def warnings(self) -> list[MypyDiagnostic]:
         """Get all warning diagnostics."""
         return [d for d in self.diagnostics if d.level == MessageLevel.WARNING]
 
+    @computed_field
     @property
     def error_count(self) -> int:
         """Count of error diagnostics."""
         return len(self.errors)
 
+    @computed_field
     @property
     def warning_count(self) -> int:
         """Count of warning diagnostics."""
         return len(self.warnings)
 
+    @computed_field
     @property
     def files_with_errors(self) -> set[str]:
         """Set of files containing errors."""
