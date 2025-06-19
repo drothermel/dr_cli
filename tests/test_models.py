@@ -290,3 +290,42 @@ def test_diagnostic_notes_can_be_added():
     diagnostic.notes.append("Added note")
     assert len(diagnostic.notes) == 1
     assert diagnostic.notes[0] == "Added note"
+
+
+def test_location_with_only_required_fields():
+    """Test Location with only file and line (no column/end)."""
+    location = Location(file="test.py", line=42)
+    
+    assert location.file == "test.py"
+    assert location.line == 42
+    assert location.column is None
+    assert location.end_line is None
+    assert location.end_column is None
+
+
+def test_location_with_column():
+    """Test Location with file, line, and column."""
+    location = Location(file="test.py", line=42, column=13)
+    
+    assert location.file == "test.py"
+    assert location.line == 42
+    assert location.column == 13
+    assert location.end_line is None
+    assert location.end_column is None
+
+
+def test_location_with_end_position():
+    """Test Location with end line and column."""
+    location = Location(
+        file="test.py", 
+        line=42, 
+        column=13,
+        end_line=43,
+        end_column=20
+    )
+    
+    assert location.file == "test.py"
+    assert location.line == 42
+    assert location.column == 13
+    assert location.end_line == 43
+    assert location.end_column == 20
