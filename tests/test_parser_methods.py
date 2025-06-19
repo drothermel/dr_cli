@@ -14,3 +14,25 @@ def parser() -> MypyOutputParser:
 
 class TestParserMethods:
     """Test parser methods that create models from parsed data."""
+    
+    def test_diagnostic_parsing_creates_error_model(self, parser: MypyOutputParser) -> None:
+        """Test parsing error line creates correct MypyDiagnostic model."""
+        line = "file.py:10: error: Message text [error-code]"
+        diagnostic = parser._try_parse_diagnostic(line)
+        
+        assert diagnostic is not None
+        assert diagnostic.location.file == "file.py"
+        assert diagnostic.location.line == 10
+        assert diagnostic.level == MessageLevel.ERROR
+        assert diagnostic.message == "Message text"
+        assert diagnostic.error_code == "error-code"
+    
+    def test_diagnostic_parsing_creates_warning_model(self, parser: MypyOutputParser) -> None:
+        """Test parsing warning line creates correct MypyDiagnostic model."""
+        line = "file.py:10:5: warning: Message text [warn-code]"
+        diagnostic = parser._try_parse_diagnostic(line)
+        
+        assert diagnostic is not None
+        assert diagnostic.location.column == 5
+        assert diagnostic.level == MessageLevel.WARNING
+        assert diagnostic.error_code == "warn-code"
