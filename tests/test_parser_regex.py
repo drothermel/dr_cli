@@ -84,3 +84,14 @@ def test_note_pattern_matches_valid_note_lines(line: str) -> None:
     match = assert_pattern_matches(NOTE_PATTERN, line)
     assert match.group("message") is not None
     assert match.group("file") is not None
+
+
+@pytest.mark.parametrize("line", [
+    "file.py:10: error: This is not a note",
+    "file.py: note: Missing line number",
+    "10: note: Missing filename",
+    "file.py:10 note: Missing colon",
+])
+def test_note_pattern_rejects_invalid_lines(line: str) -> None:
+    """Test that note pattern rejects invalid lines."""
+    assert_pattern_not_matches(NOTE_PATTERN, line)
