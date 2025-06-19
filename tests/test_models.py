@@ -71,3 +71,29 @@ def test_diagnostic_rejects_note_level(sample_location):
     assert len(errors) == 1
     assert errors[0]['loc'] == ('level',)
     assert "Notes cannot be MypyDiagnostic instances" in errors[0]['msg']
+
+
+def test_note_accepts_note_level(sample_location):
+    """Test that MypyNote accepts NOTE level."""
+    note = MypyNote(
+        location=sample_location,
+        level=MessageLevel.NOTE,
+        message="Test note"
+    )
+    assert note.level == MessageLevel.NOTE
+
+
+@pytest.mark.parametrize("level", [MessageLevel.ERROR, MessageLevel.WARNING])
+def test_note_rejects_non_note_levels(sample_location, level):
+    """Test that MypyNote rejects ERROR/WARNING levels."""
+    with pytest.raises(ValidationError) as exc_info:
+        MypyNote(
+            location=sample_location,
+            level=level,
+            message="Test message"
+        )
+    
+    errors = exc_info.value.errors()
+    assert len(errors) == 1
+    assert errors[0]['loc'] == ('level',)
+    assert "MypyNote must have NOTE level" in errors[0]['msg']
