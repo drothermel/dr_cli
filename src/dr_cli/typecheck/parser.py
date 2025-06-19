@@ -130,3 +130,12 @@ class MypyOutputParser:
         """Associate a note with the current diagnostic if possible."""
         if self.current_diagnostic is not None:
             self.current_diagnostic.notes.append(note_message)
+
+    def _try_parse_summary(self, line: str) -> bool:
+        """Try to parse a summary line for file counts."""
+        match = SUMMARY_PATTERN.match(line.strip())
+        if not match:
+            return False
+
+        self.files_checked = int(match.group(3))
+        return True
