@@ -22,7 +22,8 @@ def run_dmypy_safe(args: list[str]) -> tuple[str, str, int]:
         sys.exit(1)
 
 
-def start_daemon():
+def start_daemon() -> int:
+    """Start dmypy daemon if not already running."""
     # Check daemon status
     _, _, status_code = run_dmypy_safe(["status"])
 
@@ -35,7 +36,8 @@ def start_daemon():
     return 0
 
 
-def restart_daemon():
+def restart_daemon() -> None:
+    """Restart dmypy daemon by stopping and starting it."""
     print("Daemon crashed! Restarting...")
     run_dmypy_safe(["stop"])
     run_dmypy_safe(["start"])
@@ -105,7 +107,8 @@ def check_with_mypy(paths: list[str]) -> int:
     return total_errors
 
 
-def main():
+def main() -> None:
+    """Run the typecheck script."""
     parser = argparse.ArgumentParser(description="Type check Python files with mypy")
     parser.add_argument(
         "paths", nargs="*", help="Paths to check (default: current directory)"
@@ -141,10 +144,7 @@ def main():
         run_dmypy_safe(["stop"])
 
     # Run type checking
-    if args.no_daemon:
-        errors = check_with_mypy(paths)
-    else:
-        errors = check_with_daemon(paths)
+    errors = check_with_mypy(paths) if args.no_daemon else check_with_daemon(paths)
 
     # Exit with error count
     sys.exit(min(errors, 1))  # Exit 1 if any errors
