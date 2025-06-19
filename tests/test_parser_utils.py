@@ -42,3 +42,25 @@ class TestParserUtils:
         assert result.line == expected_line
         assert result.column == expected_column
         assert result.level == "note"
+    
+    @pytest.mark.parametrize("line", [
+        "file.py:10: note: This is a note",  # Wrong function - note not diagnostic
+        "file.py: error: Missing line number",
+        "10: error: Missing filename",
+        "Not a diagnostic line at all",
+    ])
+    def test_try_match_diagnostic_invalid_inputs(self, line: str) -> None:
+        """Test try_match_diagnostic returns None for invalid inputs."""
+        result = try_match_diagnostic(line)
+        assert result is None
+    
+    @pytest.mark.parametrize("line", [
+        "file.py:10: error: This is not a note",  # Wrong function - error not note
+        "file.py: note: Missing line number",
+        "10: note: Missing filename",
+        "Random text without pattern",
+    ])
+    def test_try_match_note_invalid_inputs(self, line: str) -> None:
+        """Test try_match_note returns None for invalid inputs."""
+        result = try_match_note(line)
+        assert result is None
