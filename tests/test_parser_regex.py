@@ -18,3 +18,19 @@ def assert_pattern_not_matches(pattern: re.Pattern[str], text: str) -> None:
     """Assert pattern does not match."""
     match = pattern.match(text)
     assert match is None, f"Pattern should not match: {text}"
+
+
+# Parametrized test data for diagnostic pattern
+VALID_DIAGNOSTIC_LINES = [
+    "file.py:10: error: Message [code]",
+    "file.py:10:5: error: Message [code]",
+    "path/to/file.py:10: warning: Message [code]",
+    "file.py:10: error: Message without code",
+]
+
+INVALID_DIAGNOSTIC_LINES = [
+    "file.py:10: note: This is a note",
+    "file.py: error: Missing line number",
+    "10: error: Missing filename",
+    "Not a diagnostic line at all",
+]
