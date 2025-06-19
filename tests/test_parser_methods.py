@@ -56,3 +56,28 @@ class TestParserMethods:
         
         assert note is not None
         assert note.location.column == 5
+    
+    def test_note_association_with_diagnostic(self, parser: MypyOutputParser) -> None:
+        """Test notes are associated with current diagnostic."""
+        # Parse a diagnostic first
+        error_line = "file.py:10: error: Message [code]"
+        diagnostic = parser._try_parse_diagnostic(error_line)
+        parser.diagnostics.append(diagnostic)
+        parser.current_diagnostic = diagnostic
+        
+        # Associate a note with it
+        parser._associate_note_with_diagnostic("This is a note message")
+        
+        assert len(diagnostic.notes) == 1
+        assert diagnostic.notes[0] == "This is a note message"
+    
+    def test_note_association_without_diagnostic(self, parser: MypyOutputParser) -> None:
+        """Test notes without current diagnostic are handled gracefully."""
+        # No current diagnostic
+        parser.current_diagnostic = None
+        
+        # Try to associate note
+        parser._associate_note_with_diagnostic("Standalone note")
+        
+        # Should not crash, note is just ignored for association
+        assert len(parser.diagnostics) == 0
