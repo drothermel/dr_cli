@@ -92,7 +92,10 @@ class MypyResults(BaseModel):
     def format_summary(self) -> str:
         """Format mypy-style summary line."""
         num_files = len(self.files_with_errors)
+        error_word = "error" if self.error_count == 1 else "errors"
+        file_word = "file" if num_files == 1 else "files"
+        source_word = "file" if self.files_checked == 1 else "files"
         return (
-            f"Found {self.error_count} errors in {num_files} files "
-            f"(checked {self.files_checked} source files)"
+            f"Found {self.error_count} {error_word} in {num_files} {file_word} "
+            f"(checked {self.files_checked} source {source_word})"
         )

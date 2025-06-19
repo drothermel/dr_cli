@@ -206,3 +206,46 @@ def test_results_files_with_errors_empty_case():
     )
     
     assert len(empty_results.files_with_errors) == 0
+
+
+@pytest.mark.parametrize("error_count,warning_count,file_count,files_checked,expected", [
+    (0, 0, 0, 5, "Found 0 errors in 0 files (checked 5 source files)"),
+    (1, 0, 1, 10, "Found 1 error in 1 file (checked 10 source files)"),
+    (2, 1, 2, 15, "Found 2 errors in 2 files (checked 15 source files)"),
+    (5, 3, 3, 20, "Found 5 errors in 3 files (checked 20 source files)"),
+])
+def test_format_summary_with_different_counts(error_count, warning_count, file_count, files_checked, expected):
+    """Test format_summary with various error/warning/file counts."""
+    # Create diagnostics to match the expected counts
+    diagnostics = []
+    files = [f"file{i}.py" for i in range(file_count)]
+    
+    # Add errors distributed across files
+    for i in range(error_count):
+        file_index = i % len(files) if files else 0
+        file_name = files[file_index] if files else "test.py"
+        diagnostics.append(MypyDiagnostic(
+            location=Location(file=file_name, line=10 + i),
+            level=MessageLevel.ERROR,
+            message=f"Error {i+1}",
+            error_code=f"error-{i+1}"
+        ))
+    
+    # Add warnings
+    for i in range(warning_count):
+        file_index = i % len(files) if files else 0
+        file_name = files[file_index] if files else "test.py"
+        diagnostics.append(MypyDiagnostic(
+            location=Location(file=file_name, line=50 + i),
+            level=MessageLevel.WARNING,
+            message=f"Warning {i+1}",
+            error_code=f"warning-{i+1}"
+        ))
+    
+    results = MypyResults(
+        diagnostics=diagnostics,
+        standalone_notes=[],
+        files_checked=files_checked
+    )
+    
+    assert results.format_summary() == expected
