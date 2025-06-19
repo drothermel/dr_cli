@@ -58,3 +58,16 @@ def test_diagnostic_pattern_matches_valid_warning_lines(line: str) -> None:
     """Test that diagnostic pattern matches valid warning lines."""
     match = assert_pattern_matches(DIAGNOSTIC_PATTERN, line)
     assert match.group("level") == "warning"
+
+
+@pytest.mark.parametrize("line", [
+    "file.py:10: note: This is a note",
+    "file.py: error: Missing line number",
+    "10: error: Missing filename",
+    "Not a diagnostic line at all",
+    "file.py:10 error: Missing colon",
+    "file.py:10: info: Wrong level",
+])
+def test_diagnostic_pattern_rejects_invalid_lines(line: str) -> None:
+    """Test that diagnostic pattern rejects invalid lines."""
+    assert_pattern_not_matches(DIAGNOSTIC_PATTERN, line)
