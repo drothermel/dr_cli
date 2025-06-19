@@ -36,3 +36,23 @@ class TestParserMethods:
         assert diagnostic.location.column == 5
         assert diagnostic.level == MessageLevel.WARNING
         assert diagnostic.error_code == "warn-code"
+    
+    def test_note_parsing_creates_model(self, parser: MypyOutputParser) -> None:
+        """Test parsing note line creates correct MypyNote model."""
+        line = "file.py:10: note: This is a note"
+        note = parser._try_parse_note(line)
+        
+        assert note is not None
+        assert note.location.file == "file.py"
+        assert note.location.line == 10
+        assert note.location.column is None
+        assert note.level == MessageLevel.NOTE
+        assert note.message == "This is a note"
+    
+    def test_note_parsing_with_column(self, parser: MypyOutputParser) -> None:
+        """Test parsing note with column creates correct model."""
+        line = "file.py:10:5: note: Note with column"
+        note = parser._try_parse_note(line)
+        
+        assert note is not None
+        assert note.location.column == 5
