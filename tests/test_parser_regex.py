@@ -95,3 +95,19 @@ def test_note_pattern_matches_valid_note_lines(line: str) -> None:
 def test_note_pattern_rejects_invalid_lines(line: str) -> None:
     """Test that note pattern rejects invalid lines."""
     assert_pattern_not_matches(NOTE_PATTERN, line)
+
+
+@pytest.mark.parametrize("line,expected_errors,expected_files,expected_checked", [
+    ("Found 1 error in 1 file (checked 1 source file)", 1, 1, 1),
+    ("Found 2 errors in 1 file (checked 1 source file)", 2, 1, 1),
+    ("Found 1 error in 2 files (checked 3 source files)", 1, 2, 3),
+    ("Found 3 errors in 2 files (checked 5 source files)", 3, 2, 5),
+])
+def test_summary_pattern_matches_valid_summary_lines(
+    line: str, expected_errors: int, expected_files: int, expected_checked: int
+) -> None:
+    """Test that summary pattern matches and extracts correct values."""
+    match = assert_pattern_matches(SUMMARY_PATTERN, line)
+    assert int(match.group(1)) == expected_errors
+    assert int(match.group(2)) == expected_files
+    assert int(match.group(3)) == expected_checked
