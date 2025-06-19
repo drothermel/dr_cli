@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from .models import MypyDiagnostic, MypyNote
+    from .models import MypyDiagnostic, MypyNote, MypyResults
 
 
 class MatchResult(NamedTuple):
@@ -139,3 +139,41 @@ class MypyOutputParser:
 
         self.files_checked = int(match.group(3))
         return True
+
+    def parse_output(self, output: str) -> "MypyResults":
+        """Parse mypy output into structured results."""
+        # Import at runtime to avoid circular imports
+        from .models import MypyResults
+
+        lines = output.strip().split("\n")
+
+        for raw_line in lines:
+            line = raw_line.strip()
+            if not line:
+                continue
+
+            # Try parsing as diagnostic first
+            diagnostic = self._try_parse_diagnostic(line)
+            if diagnostic:
+                self.diagnostics.append(diagnostic)
+                self.current_diagnostic = diagnostic
+                continue
+
+            # Try parsing as note
+            note = self._try_parse_note(line)
+            if note:
+                # Try to associate with current diagnostic, otherwise standalone
+                self._associate_note_with_diagnostic(note.message)
+                if self.current_diagnostic is None:
+                    self.standalone_notes.append(note)
+                continue
+
+            # Try parsing as summary
+            if self._try_parse_summary(line):
+                continue
+
+        return MypyResults(
+            diagnostics=self.diagnostics,
+            standalone_notes=self.standalone_notes,
+            files_checked=self.files_checked,
+        )
