@@ -145,3 +145,25 @@ def test_results_warnings_property_filters_only_warnings(sample_results):
     assert len(warnings) == 1
     assert warnings[0].level == MessageLevel.WARNING
     assert warnings[0].message == "First warning"
+
+
+def test_results_error_count_returns_correct_count(sample_results):
+    """Test that error_count returns the correct number of errors."""
+    assert sample_results.error_count == 2
+
+
+def test_results_warning_count_returns_correct_count(sample_results):
+    """Test that warning_count returns the correct number of warnings."""
+    assert sample_results.warning_count == 1
+
+
+def test_results_counts_with_empty_diagnostics():
+    """Test count properties with no diagnostics."""
+    empty_results = MypyResults(
+        diagnostics=[],
+        standalone_notes=[],
+        files_checked=0
+    )
+    
+    assert empty_results.error_count == 0
+    assert empty_results.warning_count == 0
