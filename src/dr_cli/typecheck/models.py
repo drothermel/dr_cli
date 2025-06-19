@@ -51,3 +51,43 @@ class MypyNote(MypyMessage):
         if v != MessageLevel.NOTE:
             raise ValueError("MypyNote must have NOTE level")
         return v
+
+
+class MypyResults(BaseModel):
+    """Aggregated results from type checking."""
+    diagnostics: list[MypyDiagnostic]
+    standalone_notes: list[MypyNote]
+    files_checked: int
+
+    @property
+    def errors(self) -> list[MypyDiagnostic]:
+        """Get all error diagnostics."""
+        return [d for d in self.diagnostics if d.level == MessageLevel.ERROR]
+
+    @property
+    def warnings(self) -> list[MypyDiagnostic]:
+        """Get all warning diagnostics."""
+        return [d for d in self.diagnostics if d.level == MessageLevel.WARNING]
+
+    @property
+    def error_count(self) -> int:
+        """Count of error diagnostics."""
+        return len(self.errors)
+
+    @property
+    def warning_count(self) -> int:
+        """Count of warning diagnostics."""
+        return len(self.warnings)
+
+    @property
+    def files_with_errors(self) -> set[str]:
+        """Set of files containing errors."""
+        return {d.location.file for d in self.errors}
+
+    def format_summary(self) -> str:
+        """Format mypy-style summary line."""
+        num_files = len(self.files_with_errors)
+        return (
+            f"Found {self.error_count} errors in {num_files} files "
+            f"(checked {self.files_checked} source files)"
+        )
