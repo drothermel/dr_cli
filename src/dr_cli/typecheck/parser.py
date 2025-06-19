@@ -76,3 +76,31 @@ class MypyOutputParser:
         self.standalone_notes: list[MypyNote] = []
         self.files_checked: int = 0
         self.current_diagnostic: MypyDiagnostic | None = None
+
+    def _try_parse_diagnostic(self, line: str) -> "MypyDiagnostic | None":
+        """Try to parse a diagnostic (error/warning) line."""
+        match_result = try_match_diagnostic(line)
+        if not match_result:
+            return None
+
+        # Import at runtime to avoid circular imports
+        from .models import Location, MessageLevel, MypyDiagnostic
+
+        location = Location(
+            file=match_result.file,
+            line=match_result.line,
+            column=match_result.column,
+        )
+
+        level = (
+            MessageLevel.ERROR
+            if match_result.level == "error"
+            else MessageLevel.WARNING
+        )
+
+        return MypyDiagnostic(
+            location=location,
+            level=level,
+            message=match_result.message,
+            error_code=match_result.error_code or "",
+        )
