@@ -97,3 +97,51 @@ def test_note_rejects_non_note_levels(sample_location, level):
     assert len(errors) == 1
     assert errors[0]['loc'] == ('level',)
     assert "MypyNote must have NOTE level" in errors[0]['msg']
+
+
+@pytest.fixture
+def sample_results():
+    """Create MypyResults with mixed diagnostics."""
+    error1 = MypyDiagnostic(
+        location=Location(file="file1.py", line=10),
+        level=MessageLevel.ERROR,
+        message="First error",
+        error_code="error-1"
+    )
+    error2 = MypyDiagnostic(
+        location=Location(file="file2.py", line=20),
+        level=MessageLevel.ERROR,
+        message="Second error",
+        error_code="error-2"
+    )
+    warning = MypyDiagnostic(
+        location=Location(file="file1.py", line=30),
+        level=MessageLevel.WARNING,
+        message="First warning",
+        error_code="warning-1"
+    )
+    
+    return MypyResults(
+        diagnostics=[error1, warning, error2],
+        standalone_notes=[],
+        files_checked=3
+    )
+
+
+def test_results_errors_property_filters_only_errors(sample_results):
+    """Test that errors property returns only ERROR diagnostics."""
+    errors = sample_results.errors
+    
+    assert len(errors) == 2
+    assert all(diag.level == MessageLevel.ERROR for diag in errors)
+    assert errors[0].message == "First error"
+    assert errors[1].message == "Second error"
+
+
+def test_results_warnings_property_filters_only_warnings(sample_results):
+    """Test that warnings property returns only WARNING diagnostics."""
+    warnings = sample_results.warnings
+    
+    assert len(warnings) == 1
+    assert warnings[0].level == MessageLevel.WARNING
+    assert warnings[0].message == "First warning"
