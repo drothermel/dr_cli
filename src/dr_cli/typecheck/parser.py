@@ -1,7 +1,10 @@
 """Mypy output parsing utilities."""
 
 import re
-from typing import NamedTuple
+from typing import TYPE_CHECKING, NamedTuple
+
+if TYPE_CHECKING:
+    from .models import MypyDiagnostic, MypyNote
 
 
 class MatchResult(NamedTuple):
@@ -62,3 +65,14 @@ def try_match_note(line: str) -> MatchResult | None:
         message=match.group("message"),
         error_code=None,
     )
+
+
+class MypyOutputParser:
+    """Parser for mypy output into structured Pydantic models."""
+
+    def __init__(self) -> None:
+        """Initialize parser with empty state."""
+        self.diagnostics: list[MypyDiagnostic] = []
+        self.standalone_notes: list[MypyNote] = []
+        self.files_checked: int = 0
+        self.current_diagnostic: MypyDiagnostic | None = None
