@@ -7,11 +7,10 @@ Supports both regular mypy and dmypy daemon mode.
 import os
 import sys
 import argparse
-from typing import List, Tuple
 from mypy import api
 
 
-def run_dmypy_safe(args: List[str]) -> Tuple[str, str, int]:
+def run_dmypy_safe(args: list[str]) -> tuple[str, str, int]:
     """Run dmypy command safely, handling import errors."""
     try:
         return api.run_dmypy(args)
@@ -42,7 +41,7 @@ def restart_daemon():
     run_dmypy_safe(["start"])
 
 
-def check_with_daemon(paths: List[str], retry_on_crash: bool = True) -> int:
+def check_with_daemon(paths: list[str], retry_on_crash: bool = True) -> int:
     """Check paths using dmypy daemon."""
 
     # Verify daemon is running
@@ -84,7 +83,7 @@ def check_with_daemon(paths: List[str], retry_on_crash: bool = True) -> int:
     return total_errors
 
 
-def check_with_mypy(paths: List[str]) -> int:
+def check_with_mypy(paths: list[str]) -> int:
     """Check paths using regular mypy (no daemon)."""
     total_errors = 0
 
