@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 
 class MessageLevel(str, Enum):
     """Mypy message severity levels."""
+
     ERROR = "error"
     WARNING = "warning"
     NOTE = "note"
@@ -13,6 +14,7 @@ class MessageLevel(str, Enum):
 
 class Location(BaseModel):
     """Represents a location in source code."""
+
     file: str
     line: int
     column: int | None = None
@@ -22,6 +24,7 @@ class Location(BaseModel):
 
 class MypyMessage(BaseModel):
     """Base class for all mypy messages."""
+
     location: Location
     level: MessageLevel
     message: str
@@ -29,10 +32,11 @@ class MypyMessage(BaseModel):
 
 class MypyDiagnostic(MypyMessage):
     """Error or warning with an error code and optional associated notes."""
+
     error_code: str
     notes: list[str] = Field(default_factory=list)
 
-    @field_validator('level')
+    @field_validator("level")
     @classmethod
     def validate_level(cls, v: MessageLevel) -> MessageLevel:
         """Validate that diagnostic level is error or warning, not note."""
@@ -44,7 +48,7 @@ class MypyDiagnostic(MypyMessage):
 class MypyNote(MypyMessage):
     """Standalone note (reveal_type, context headers, etc.)"""
 
-    @field_validator('level')
+    @field_validator("level")
     @classmethod
     def validate_level(cls, v: MessageLevel) -> MessageLevel:
         """Validate that note level is NOTE."""
@@ -55,6 +59,7 @@ class MypyNote(MypyMessage):
 
 class MypyResults(BaseModel):
     """Aggregated results from type checking."""
+
     diagnostics: list[MypyDiagnostic]
     standalone_notes: list[MypyNote]
     files_checked: int
