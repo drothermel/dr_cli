@@ -34,3 +34,15 @@ INVALID_DIAGNOSTIC_LINES = [
     "10: error: Missing filename",
     "Not a diagnostic line at all",
 ]
+
+
+@pytest.mark.parametrize("line", [
+    "file.py:10: error: Message [code]",
+    "file.py:10:5: error: Message [code]",
+    "tests/fixtures/sample_code/simple_error.py:10: error: Argument 1 to \"add_numbers\" has incompatible type \"str\"; expected \"int\"  [arg-type]",
+    "file.py:10: error: Message without code",
+])
+def test_diagnostic_pattern_matches_valid_error_lines(line: str) -> None:
+    """Test that diagnostic pattern matches valid error lines."""
+    match = assert_pattern_matches(DIAGNOSTIC_PATTERN, line)
+    assert match.group("level") == "error"
