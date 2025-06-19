@@ -104,3 +104,29 @@ class MypyOutputParser:
             message=match_result.message,
             error_code=match_result.error_code or "",
         )
+
+    def _try_parse_note(self, line: str) -> "MypyNote | None":
+        """Try to parse a note line."""
+        match_result = try_match_note(line)
+        if not match_result:
+            return None
+
+        # Import at runtime to avoid circular imports
+        from .models import Location, MessageLevel, MypyNote
+
+        location = Location(
+            file=match_result.file,
+            line=match_result.line,
+            column=match_result.column,
+        )
+
+        return MypyNote(
+            location=location,
+            level=MessageLevel.NOTE,
+            message=match_result.message,
+        )
+
+    def _associate_note_with_diagnostic(self, note_message: str) -> None:
+        """Associate a note with the current diagnostic if possible."""
+        if self.current_diagnostic is not None:
+            self.current_diagnostic.notes.append(note_message)
