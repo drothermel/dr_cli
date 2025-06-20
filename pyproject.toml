@@ -12,6 +12,7 @@ dependencies = []
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
 [dependency-groups]
 dev = [
     "mypy>=1.16.0",
@@ -38,6 +39,7 @@ all = [
 
 [tool.ruff]
 line-length = 88
+cache-dir = ".ruff_cache"
 include = ["src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
 exclude = ["outputs/*", "notebooks/*"]
 
@@ -49,106 +51,73 @@ docstring-code-line-length = 72
 
 [tool.ruff.lint]
 extend-select = [
-    "A",    # flake8-builtins
-    "ANN",  # flake8-annotations (type hints)
-    "ARG",  # flake8-nused-arguments
-    "B",    # flake8-bugbear
-    "BLE",  # flake8-blind-except
-    "COM",  # flake8-commas
-    "C4",   # flake8-comprehensions
-    "C90",  # mccabe compexity
-    "D",    # pydocstyle
-    "DTZ",  # flake8-datetimez (timezone-awareness)
-    "E",    # pycodestyle
-    "ERA",  # eradicate
-    "EXE",  # flake8-executable
-    "F",    # pyflakes
-    "FA",   # flake8-future-annotations
-    "FBT",  # flake8-boolean-trap
-    "FIX",  # flake8-fixme
-    "FLY",  # flynt
-    "I",    # isort
-    "ICN",  # flake8-import-conventions
-    "INP",  # flake8-no-pep420
-    "INT",  # flake8-gettext
-    "ISC",  # flake8-implicit-str-concat
-    "LOG",  # flake8-logging
-    "N",    # pep8-naming
-    "NPY",  # numpy
-    "PD",   # pandas-vet
-    "PERF", # perflint
-    "PIE",  # flake8-pie
-    "PLW",  # pylint warnings
-    "PLE",  # pylint errors
-    "PLR0133",  # constant comparisons
-    "PLR1714",  # repeated comparisons
-    "PLR2004",  # magic values 
-    "PT",   # flake8-pytest-style
-    "PTH",  # flake8-use-pathlib
-    "PYI",  # flake8-pyi
-    "Q",    # flake8-quotes
-    "RET",  # flake8-return
-    "RSE",  # flake8-raise
-    "RUF",  # ruff specific
-    "S",    # flake8-bandit
-    "SLF",  # flake8-self
-    "SIM",  # flake8-simplify
-    "T10",  # flake8-debugger
-    "T20",  # flake8-print
-    "TCH",  # flake8-type-checking
-    "TID",  # flake8-tidy-imports
-    "TD",   # flake8-todos
-    "TRY",  # tryceratops
-    "UP",   # pyupgrade
-    "W",    # pycodestyle warnings
-    "YTT",  # flake8-2020 (sys.version checks)
+    "F", "E", "W",          # core
+    "B", "FBT003",          # bugbear criticals
+    "ARG", "ANN",           # api clarity
+    "C4", "C90",            # perf / complexity
+    "D1", "D401",           # missing docstrings + “imperative mood”
+    "NPY", "PD", "PERF",    # data-science-specific
+    "PIE", "SIM",           # silent foot-guns
+    "PT", "TCH", "TID",     # pytest & typing hygiene
+    "RUF", "UP", "S",       # upgrades, security
+    "ERA",                  # commented out code
+    "PLE", "PLR", "PLW",    # complexity
+    "ICN001",               # import shortnames
 ]
 ignore = [
-    "COM812",   # ignoring both based on conflict
-    "ISC001",   #   ... see above comment
-    "TD002",    # include author name with todo
-    "TD003",    # link to issue after todo
-    "FIX002",   # throws on all TODOs
-    "S101",     # asserts are part of our coding style
-    "PT015",    # asserts are part of our coding style
-    "B011",     # asserts are part of our coding style
-    "TRY003",   # Keep our thorough error messages
-    "FBT001",   # Especially in ml code, allow bool fxn params
-    "FBT002",   # Especially in ml code, allow bool fxn params
-    "ARG001",   # Unused function arg, common in callbacks and handlers
-    "ANN401",   # With ML libs, very useful to use Any
+    "ARG001",               # callbacks
+    "ANN401",               # `Any` is pragmatic in tensors
+    "S101",                 # asserts for invariants
+    "FBT001", "FBT002",     # bool kwargs common
+    "TD002", "TD003",       # lightweight TODOs fine
+    "COM812", "ISC001",     # Overlap with each other in formatting
+    "ICN002", "ICN003",     # import rules that are overly restrictive
+    "PLR0913",              # Too many args, rough with ML code
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = [
-    "ARG",      # unused arguments in fixtures
-    "PLR2004",  # Magic values are OK in tests
-]
-"src/models/**/*.py" = [
-    "PLR0913",  # Many arguments OK for model configs
+    "ARG",                  # unused arguments in fixtures
+    "PLR2004",              # Magic values are OK in tests
 ]
 "scripts/**/*.py" = [
-    "T201",     # print() is fine in scripts
+    "T201",                 # print() is fine in scripts
 ]
 "*_notebook.py" = [
-    "E402", # Import order OK in notebooks
-    "F401", # Unused imports OK in notebooks
+    "E402",                 # Import order OK in notebooks
+    "F401",                 # Unused imports OK in notebooks
+]
+"**/__init__.py" = [
+    "D104",                 # Missing docstring in public package
+    "D103",                 # Missing docstring in public function
 ]  
 
 [tool.ruff.lint.mccabe]
-max-complexity = 15  # Higher threshold for ML
+max-complexity = 15         # Higher threshold for ML
 
 [tool.ruff.lint.pydocstyle]
-convention = "google"  # Accepts: "google", "numpy", or "pep257".
+convention = "google"       # Accepts: "google", "numpy", or "pep257".
 ignore-decorators = ["typing.overload", "typing.override"]
 
 [tool.ruff.lint.pylint]
-max-args = 10           # More lenient for ML functions
-max-statements = 100    # Allow longer functions for training loops
+max-args            = 8     # allow up to 8 params before PLR0913 fires
+max-branches        = 20    # PLR0912
+max-statements      = 80    # PLR0915
+max-nested-blocks   = 8     # PLR1702
+max-returns         = 10    # PLR0911
+
+[tool.ruff.lint.flake8-import-conventions.aliases]
+numpy               = "np"
+"numpy.typing"      = "npt"
+pandas              = "pd"
+"matplotlib.pyplot" = "plt"
+seaborn             = "sns"
+"dask.dataframe"    = "dd"
+polars              = "pl"
+lightning			= "L"
+"jax.numpy" 	    = "jnp"
 
 [tool.mypy]
-files = ["src/", "tests/"]
-mypy_path = "src"
 strict = true
 check_untyped_defs = true
 disallow_any_generics = true
