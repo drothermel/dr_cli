@@ -48,3 +48,21 @@ class TestParserIntegration:
         assert "Possible overload variants:" in overload_error.notes[0]
         assert "def process(x: int) -> str" in overload_error.notes[1]
         assert "def process(x: str) -> int" in overload_error.notes[2]
+    
+    def test_parse_multiple_errors(self, parser: MypyOutputParser) -> None:
+        """Test parsing multiple errors in same file."""
+        results = parser.parse_output(MULTIPLE_ERRORS_OUTPUT)
+        
+        assert len(results.diagnostics) == 3
+        assert results.error_count == 3
+        assert results.warning_count == 0
+        assert results.files_checked == 1
+        
+        # Check error types
+        assert results.diagnostics[0].error_code == "name-defined"
+        assert results.diagnostics[1].error_code == "assignment"
+        assert results.diagnostics[2].error_code == "arg-type"
+        
+        # All from same file
+        assert all(d.location.file == "tests/fixtures/sample_code/multiple_errors.py" 
+                   for d in results.diagnostics)

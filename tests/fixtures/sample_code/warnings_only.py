@@ -1,8 +1,12 @@
 """File with only warnings, no errors."""
 
-from typing import Any
+from typing import Any, cast
 
-# This will generate a warning about Any type
-def process_data(data: Any) -> Any:
-    """Process data of any type."""
-    return data
+# Unused import - generates warning with --warn-unused-ignores
+import os  # type: ignore[unused-import]
+
+# This generates a warning about redundant cast
+x = cast(int, 5)
+
+# Unused variable
+y = 10
