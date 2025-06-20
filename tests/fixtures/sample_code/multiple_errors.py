@@ -7,7 +7,7 @@ def greet(name: str) -> str:
 
 
 # Name error - undefined variable
-x = undefined_variable
+x = undefined_variable  # noqa: F821
 
 # Type error - wrong type assignment
 y: int = "not a number"

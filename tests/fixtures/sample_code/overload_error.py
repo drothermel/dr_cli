@@ -6,10 +6,12 @@ from typing import overload
 @overload
 def process(x: int) -> str: ...
 
-@overload  
+
+@overload
 def process(x: str) -> int: ...
 
-def process(x):
+
+def process(x):  # noqa: D103
     if isinstance(x, int):
         return str(x)
     else:
