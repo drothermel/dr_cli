@@ -100,16 +100,45 @@ class TestParserIntegration:
 
     def test_parse_malformed_lines(self, parser: MypyOutputParser) -> None:
         """Test parser handles malformed lines gracefully."""
-        malformed = """
-        Random text that doesn't match
-        tests/file.py: missing line number
-        10: missing filename
-        tests/file.py:10: error: Valid error line [code]
-        More random text
-        Found 1 error in 1 file (checked 1 source file)
-        """
+        malformed = """Random text that doesn't match
+tests/file.py: missing line number
+10: missing filename
+tests/file.py:10: error: Valid error line [code]
+More random text
+Found 1 error in 1 file (checked 1 source file)"""
         results = parser.parse_output(malformed)
 
         # Should only parse the valid error line
         assert len(results.diagnostics) == 1
         assert results.diagnostics[0].error_code == "code"
+
+        # Should track unparseable lines as parse errors
+        assert len(results.parse_errors) == 4
+        # Line 1: "Random text that doesn't match"
+        assert results.parse_errors[0].line_number == 1
+        assert "Random text" in results.parse_errors[0].line_content
+        # Line 2: "tests/file.py: missing line number"
+        assert results.parse_errors[1].line_number == 2
+        assert "missing line number" in results.parse_errors[1].line_content
+        # Line 3: "10: missing filename"
+        assert results.parse_errors[2].line_number == 3
+        assert "missing filename" in results.parse_errors[2].line_content
+        # Line 5: "More random text"
+        assert results.parse_errors[3].line_number == 5
+        assert "More random text" in results.parse_errors[3].line_content
+        # All should have the same reason
+        for error in results.parse_errors:
+            assert error.reason == "No pattern matched"
+
+    def test_parse_errors_not_created_for_valid_lines(
+        self, parser: MypyOutputParser
+    ) -> None:
+        """Test that successfully parsed lines don't create parse errors."""
+        results = parser.parse_output(SIMPLE_ERROR_OUTPUT)
+
+        # Should have parsed the error and summary
+        assert len(results.diagnostics) == 1
+        assert results.files_checked == 1
+
+        # No parse errors for valid output
+        assert len(results.parse_errors) == 0

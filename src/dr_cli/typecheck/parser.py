@@ -4,7 +4,7 @@ import re
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from .models import MypyDiagnostic, MypyNote, MypyResults
+    from .models import MypyDiagnostic, MypyNote, MypyResults, ParseError
 
 
 class MatchResult(NamedTuple):
@@ -76,6 +76,7 @@ class MypyOutputParser:
         self.standalone_notes: list[MypyNote] = []
         self.files_checked: int = 0
         self.current_diagnostic: MypyDiagnostic | None = None
+        self.parse_errors: list[ParseError] = []
 
     def _try_parse_diagnostic(self, line: str) -> "MypyDiagnostic | None":
         """Try to parse a diagnostic (error/warning) line."""
@@ -143,37 +144,46 @@ class MypyOutputParser:
     def parse_output(self, output: str) -> "MypyResults":
         """Parse mypy output into structured results."""
         # Import at runtime to avoid circular imports
-        from .models import MypyResults
+        from .models import MypyResults, ParseError
 
         lines = output.strip().split("\n")
 
-        for raw_line in lines:
+        for line_number, raw_line in enumerate(lines, start=1):
             line = raw_line.strip()
             if not line:
                 continue
+
+            # Track if line was successfully parsed
+            parsed = False
 
             # Try parsing as diagnostic first
             diagnostic = self._try_parse_diagnostic(line)
             if diagnostic:
                 self.diagnostics.append(diagnostic)
                 self.current_diagnostic = diagnostic
-                continue
-
-            # Try parsing as note
-            note = self._try_parse_note(line)
-            if note:
+                parsed = True
+            elif note := self._try_parse_note(line):
                 # Try to associate with current diagnostic, otherwise standalone
                 self._associate_note_with_diagnostic(note.message)
                 if self.current_diagnostic is None:
                     self.standalone_notes.append(note)
-                continue
+                parsed = True
+            elif self._try_parse_summary(line):
+                parsed = True
 
-            # Try parsing as summary
-            if self._try_parse_summary(line):
-                continue
+            # If line wasn't parsed by any pattern, track as parse error
+            if not parsed:
+                self.parse_errors.append(
+                    ParseError(
+                        line_number=line_number,
+                        line_content=raw_line,
+                        reason="No pattern matched",
+                    )
+                )
 
         return MypyResults(
             diagnostics=self.diagnostics,
             standalone_notes=self.standalone_notes,
             files_checked=self.files_checked,
+            parse_errors=self.parse_errors,
         )
