@@ -81,3 +81,30 @@ class TestParserIntegration:
         
         # Important: only 1 file had errors even though 2 were checked
         assert len(results.files_with_errors) == 1
+    
+    def test_parse_empty_output(self, parser: MypyOutputParser) -> None:
+        """Test parsing when no errors found."""
+        results = parser.parse_output(EMPTY_OUTPUT)
+        
+        assert len(results.diagnostics) == 0
+        assert results.error_count == 0
+        assert results.warning_count == 0
+        # Success messages don't update files_checked currently
+        assert results.files_checked == 0
+        assert len(results.files_with_errors) == 0
+    
+    def test_parse_malformed_lines(self, parser: MypyOutputParser) -> None:
+        """Test parser handles malformed lines gracefully."""
+        malformed = """
+        Random text that doesn't match
+        tests/file.py: missing line number
+        10: missing filename  
+        tests/file.py:10: error: Valid error line [code]
+        More random text
+        Found 1 error in 1 file (checked 1 source file)
+        """
+        results = parser.parse_output(malformed)
+        
+        # Should only parse the valid error line
+        assert len(results.diagnostics) == 1
+        assert results.diagnostics[0].error_code == "code"
