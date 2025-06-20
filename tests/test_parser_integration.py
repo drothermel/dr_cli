@@ -66,3 +66,18 @@ class TestParserIntegration:
         # All from same file
         assert all(d.location.file == "tests/fixtures/sample_code/multiple_errors.py" 
                    for d in results.diagnostics)
+    
+    def test_parse_multi_file_output(self, parser: MypyOutputParser) -> None:
+        """Test parsing errors across multiple files."""
+        results = parser.parse_output(MULTI_FILE_OUTPUT)
+        
+        assert len(results.diagnostics) == 1
+        assert results.error_count == 1
+        assert results.files_checked == 2  # Checked 2 files
+        
+        error = results.diagnostics[0]
+        assert error.location.file == "tests/fixtures/sample_code/multi_file_project/file_a.py"
+        assert error.error_code == "arg-type"
+        
+        # Important: only 1 file had errors even though 2 were checked
+        assert len(results.files_with_errors) == 1
