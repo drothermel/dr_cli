@@ -78,6 +78,13 @@ The following documentation files are **symlinks** to an external reference repo
 ### General Patterns
 Follow commit strategy, task management, and planning patterns from user-level CLAUDE.md.
 
+### Commit Messages
+- **Single-line format**: Use concise, descriptive one-line messages that clearly state what was added/changed
+- **PR readability**: Messages should read like a checklist when viewed in a PR - each line tells you exactly what functionality is included
+- **Action-oriented**: Start with action verbs like "Add", "Fix", "Update", "Remove" 
+- **Specific scope**: Include enough detail to understand the change without being verbose
+- **Example**: "Add mypy output regex patterns and parsing utilities" vs "Add patterns"
+
 ### Testing Philosophy (Project-Specific)
 - **Test your custom logic**: Validators, computed properties, business rules, edge cases
 - **Don't test the framework**: Basic Pydantic validation, built-in serialization, simple assignments
