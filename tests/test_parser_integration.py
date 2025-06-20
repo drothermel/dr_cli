@@ -142,3 +142,27 @@ Found 1 error in 1 file (checked 1 source file)"""
 
         # No parse errors for valid output
         assert len(results.parse_errors) == 0
+
+    def test_debug_mode_prints_messages(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test that debug mode prints debug messages."""
+        parser = MypyOutputParser(debug=True)
+
+        output = """tests/file.py:10: error: Test error [code]
+tests/file.py:10: note: Test note
+Unknown line
+Found 1 error in 1 file (checked 1 source file)"""
+
+        results = parser.parse_output(output)
+
+        # Check that parsing worked
+        assert len(results.diagnostics) == 1
+        assert len(results.parse_errors) == 1
+
+        # Check debug output
+        captured = capsys.readouterr()
+        assert "[DEBUG] Line 1: Parsed as diagnostic" in captured.out
+        assert "[DEBUG] Line 2: Parsed as note" in captured.out
+        assert "[DEBUG] Line 3: No pattern matched" in captured.out
+        assert "[DEBUG] Line 4: Parsed as summary" in captured.out
