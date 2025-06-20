@@ -1,10 +1,26 @@
 """Mypy output parsing utilities."""
 
 import re
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
     from .models import MypyDiagnostic, MypyNote, MypyResults, ParseError
+
+
+@dataclass
+class ParserConfig:
+    """Configuration for mypy output parser.
+
+    Attributes:
+        show_column_numbers: Whether mypy includes column numbers in output.
+        show_error_end: Whether mypy shows end line/column for errors.
+        debug: Whether to print debug messages during parsing.
+    """
+
+    show_column_numbers: bool = True
+    show_error_end: bool = False
+    debug: bool = False
 
 
 class MatchResult(NamedTuple):
@@ -70,18 +86,18 @@ def try_match_note(line: str) -> MatchResult | None:
 class MypyOutputParser:
     """Parser for mypy output into structured Pydantic models."""
 
-    def __init__(self, debug: bool = False) -> None:
+    def __init__(self, config: ParserConfig | None = None) -> None:
         """Initialize parser with empty state.
 
         Args:
-            debug: If True, print debug messages during parsing.
+            config: Parser configuration. If None, uses default config.
         """
+        self.config = config or ParserConfig()
         self.diagnostics: list[MypyDiagnostic] = []
         self.standalone_notes: list[MypyNote] = []
         self.files_checked: int = 0
         self.current_diagnostic: MypyDiagnostic | None = None
         self.parse_errors: list[ParseError] = []
-        self.debug = debug
 
     def _try_parse_diagnostic(self, line: str) -> "MypyDiagnostic | None":
         """Try to parse a diagnostic (error/warning) line."""
@@ -164,27 +180,27 @@ class MypyOutputParser:
             # Try parsing as diagnostic first
             diagnostic = self._try_parse_diagnostic(line)
             if diagnostic:
-                if self.debug:
+                if self.config.debug:
                     print(f"[DEBUG] Line {line_number}: Parsed as diagnostic")
                 self.diagnostics.append(diagnostic)
                 self.current_diagnostic = diagnostic
                 parsed = True
             elif note := self._try_parse_note(line):
                 # Try to associate with current diagnostic, otherwise standalone
-                if self.debug:
+                if self.config.debug:
                     print(f"[DEBUG] Line {line_number}: Parsed as note")
                 self._associate_note_with_diagnostic(note.message)
                 if self.current_diagnostic is None:
                     self.standalone_notes.append(note)
                 parsed = True
             elif self._try_parse_summary(line):
-                if self.debug:
+                if self.config.debug:
                     print(f"[DEBUG] Line {line_number}: Parsed as summary")
                 parsed = True
 
             # If line wasn't parsed by any pattern, track as parse error
             if not parsed:
-                if self.debug:
+                if self.config.debug:
                     print(f"[DEBUG] Line {line_number}: No pattern matched - '{line}'")
                 self.parse_errors.append(
                     ParseError(

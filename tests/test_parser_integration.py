@@ -147,7 +147,10 @@ Found 1 error in 1 file (checked 1 source file)"""
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test that debug mode prints debug messages."""
-        parser = MypyOutputParser(debug=True)
+        from dr_cli.typecheck.parser import ParserConfig
+
+        config = ParserConfig(debug=True)
+        parser = MypyOutputParser(config=config)
 
         output = """tests/file.py:10: error: Test error [code]
 tests/file.py:10: note: Test note
@@ -166,3 +169,20 @@ Found 1 error in 1 file (checked 1 source file)"""
         assert "[DEBUG] Line 2: Parsed as note" in captured.out
         assert "[DEBUG] Line 3: No pattern matched" in captured.out
         assert "[DEBUG] Line 4: Parsed as summary" in captured.out
+
+    def test_parser_with_custom_config(self) -> None:
+        """Test parser with custom configuration."""
+        from dr_cli.typecheck.parser import ParserConfig
+
+        # Test with column numbers disabled (though this doesn't affect parsing yet)
+        config = ParserConfig(show_column_numbers=False, show_error_end=True)
+        parser = MypyOutputParser(config=config)
+
+        # Should still parse normally
+        results = parser.parse_output(SIMPLE_ERROR_OUTPUT)
+        assert len(results.diagnostics) == 1
+
+        # Config should be stored
+        assert parser.config.show_column_numbers is False
+        assert parser.config.show_error_end is True
+        assert parser.config.debug is False
