@@ -131,7 +131,7 @@ class MypyOutputParser:
 
         # Check for column numbers (e.g., "file.py:10:5: error:")
         # Match pattern with file:line:column: level
-        if re.search(r'\S+:\d+:\d+:\s*(error|warning)', sample_output):
+        if re.search(r"\S+:\d+:\d+:\s*(error|warning)", sample_output):
             config.show_column_numbers = True
         else:
             config.show_column_numbers = False

@@ -35,6 +35,14 @@ This is a Python library project using modern tooling:
 - Uses `uv` for dependency management with lockfile
 - Configured for ML/data science development patterns
 
+### Parser Implementation
+The MypyOutputParser demonstrates key patterns:
+- **Model-first development**: Define data structures before implementation
+- **Configuration over code**: ParserConfig enables flexibility without code changes
+- **Parse errors as data**: Collect unparseable lines rather than failing
+- **Factory methods**: Convenience creators for common configurations
+- **Debug mode**: Built-in troubleshooting with consistent `[DEBUG]` prefix
+
 ### Code Quality Configuration
 - **Ruff**: Extensive linting rules optimized for ML code with 88-char line length
 - **MyPy**: Strict type checking with explicit package bases
@@ -91,6 +99,13 @@ Follow commit strategy, task management, and planning patterns from user-level C
 - **Use dependency order**: Basic validation → computed properties → integration → serialization
 - **Pydantic patterns**: Use `@computed_field` for serialization, test with `'text' in error['msg']`
 - **Small, focused tests**: One concept per test, composable fixtures, parametrized for systematic coverage
+
+### Parser Testing Strategy
+- **Test individual patterns first**: Use parametrized tests for regex patterns
+- **Then test integration**: Full parse tests with real mypy output
+- **Multi-line string gotcha**: Leading newlines affect line numbers - start content immediately
+- **Debug mode testing**: Use `capsys` fixture to verify debug output
+- **Commit sequence for parsers**: Model → Core → User features → Config → Advanced → Convenience
 
 ## Project Context
 
