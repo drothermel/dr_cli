@@ -186,3 +186,31 @@ Found 1 error in 1 file (checked 1 source file)"""
         assert parser.config.show_column_numbers is False
         assert parser.config.show_error_end is True
         assert parser.config.debug is False
+
+    def test_parser_with_custom_regex_patterns(self) -> None:
+        """Test parser with custom regex patterns."""
+        import re
+        from dr_cli.typecheck.parser import ParserConfig
+
+        # Custom pattern that expects different format
+        # e.g., "ERROR in file.py at 10: message"
+        custom_diagnostic = re.compile(
+            r"^(?P<level>ERROR|WARNING) in (?P<file>[^:]+) "
+            r"at (?P<line>\d+): (?P<message>.*)$"
+        )
+
+        config = ParserConfig(custom_diagnostic_pattern=custom_diagnostic)
+        parser = MypyOutputParser(config=config)
+
+        custom_output = """ERROR in test.py at 42: Something went wrong
+Found 1 error in 1 file (checked 1 source file)"""
+
+        results = parser.parse_output(custom_output)
+
+        # Should parse with custom pattern
+        assert len(results.diagnostics) == 1
+        diagnostic = results.diagnostics[0]
+        assert diagnostic.location.file == "test.py"
+        assert diagnostic.location.line == 42
+        assert diagnostic.message == "Something went wrong"
+        assert diagnostic.level.value == "error"  # Normalized to lowercase

@@ -16,11 +16,17 @@ class ParserConfig:
         show_column_numbers: Whether mypy includes column numbers in output.
         show_error_end: Whether mypy shows end line/column for errors.
         debug: Whether to print debug messages during parsing.
+        custom_diagnostic_pattern: Custom regex pattern for diagnostics.
+        custom_note_pattern: Custom regex pattern for notes.
+        custom_summary_pattern: Custom regex pattern for summary lines.
     """
 
     show_column_numbers: bool = True
     show_error_end: bool = False
     debug: bool = False
+    custom_diagnostic_pattern: re.Pattern[str] | None = None
+    custom_note_pattern: re.Pattern[str] | None = None
+    custom_summary_pattern: re.Pattern[str] | None = None
 
 
 class MatchResult(NamedTuple):
@@ -101,9 +107,30 @@ class MypyOutputParser:
 
     def _try_parse_diagnostic(self, line: str) -> "MypyDiagnostic | None":
         """Try to parse a diagnostic (error/warning) line."""
-        match_result = try_match_diagnostic(line)
-        if not match_result:
-            return None
+        # Use custom pattern if provided
+        if self.config.custom_diagnostic_pattern:
+            match = self.config.custom_diagnostic_pattern.match(line.strip())
+            if match:
+                # Extract from custom pattern - assumes same group names
+                # Get optional groups safely
+                groupdict = match.groupdict()
+                column_val = groupdict.get("column")
+                error_code = groupdict.get("error_code")
+
+                match_result = MatchResult(
+                    file=match.group("file"),
+                    line=int(match.group("line")),
+                    column=int(column_val) if column_val else None,
+                    level=match.group("level").lower(),  # Normalize to lowercase
+                    message=match.group("message"),
+                    error_code=error_code,
+                )
+            else:
+                return None
+        else:
+            match_result = try_match_diagnostic(line)
+            if not match_result:
+                return None
 
         # Import at runtime to avoid circular imports
         from .models import Location, MessageLevel, MypyDiagnostic
@@ -129,9 +156,27 @@ class MypyOutputParser:
 
     def _try_parse_note(self, line: str) -> "MypyNote | None":
         """Try to parse a note line."""
-        match_result = try_match_note(line)
-        if not match_result:
-            return None
+        # Use custom pattern if provided
+        if self.config.custom_note_pattern:
+            match = self.config.custom_note_pattern.match(line.strip())
+            if match:
+                # Get optional groups safely
+                column_val = match.groupdict().get("column")
+
+                match_result = MatchResult(
+                    file=match.group("file"),
+                    line=int(match.group("line")),
+                    column=int(column_val) if column_val else None,
+                    level="note",
+                    message=match.group("message"),
+                    error_code=None,
+                )
+            else:
+                return None
+        else:
+            match_result = try_match_note(line)
+            if not match_result:
+                return None
 
         # Import at runtime to avoid circular imports
         from .models import Location, MessageLevel, MypyNote
@@ -155,11 +200,20 @@ class MypyOutputParser:
 
     def _try_parse_summary(self, line: str) -> bool:
         """Try to parse a summary line for file counts."""
-        match = SUMMARY_PATTERN.match(line.strip())
+        pattern = self.config.custom_summary_pattern or SUMMARY_PATTERN
+        match = pattern.match(line.strip())
         if not match:
             return False
 
-        self.files_checked = int(match.group(3))
+        # For custom patterns, assume group 3 contains files checked
+        # or the last numeric group if there are fewer groups
+        if self.config.custom_summary_pattern:
+            # Find the last numeric group (for flexibility)
+            numeric_groups = [g for g in match.groups() if g and g.isdigit()]
+            if numeric_groups:
+                self.files_checked = int(numeric_groups[-1])
+        else:
+            self.files_checked = int(match.group(3))
         return True
 
     def parse_output(self, output: str) -> "MypyResults":
