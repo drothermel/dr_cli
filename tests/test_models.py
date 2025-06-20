@@ -8,6 +8,7 @@ from dr_cli.typecheck.models import (
     MypyDiagnostic,
     MypyNote,
     MypyResults,
+    ParseError,
 )
 
 
@@ -379,3 +380,47 @@ def test_diagnostic_serialization() -> None:
     assert data["message"] == "Test error"
     assert data["error_code"] == "test-error"
     assert data["notes"] == ["Test note"]
+
+
+def test_parse_error_creation() -> None:
+    """Test ParseError model creation."""
+    error = ParseError(
+        line_number=10,
+        line_content="Invalid line that couldn't be parsed",
+        reason="No pattern matched",
+    )
+
+    assert error.line_number == 10
+    assert error.line_content == "Invalid line that couldn't be parsed"
+    assert error.reason == "No pattern matched"
+
+
+def test_parse_error_optional_reason() -> None:
+    """Test ParseError with optional reason field."""
+    error = ParseError(
+        line_number=5,
+        line_content="Some unparseable content",
+    )
+
+    assert error.line_number == 5
+    assert error.line_content == "Some unparseable content"
+    assert error.reason is None
+
+
+def test_results_with_parse_errors() -> None:
+    """Test MypyResults can include parse errors."""
+    results = MypyResults(
+        diagnostics=[],
+        standalone_notes=[],
+        files_checked=1,
+        parse_errors=[
+            ParseError(line_number=1, line_content="Bad line 1"),
+            ParseError(
+                line_number=3, line_content="Bad line 3", reason="Unknown format"
+            ),
+        ],
+    )
+
+    assert len(results.parse_errors) == 2
+    assert results.parse_errors[0].line_number == 1
+    assert results.parse_errors[1].reason == "Unknown format"
