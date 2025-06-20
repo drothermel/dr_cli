@@ -8,6 +8,7 @@ from tests.fixtures.mypy_output_samples import (
     MULTIPLE_ERRORS_OUTPUT,
     MULTI_FILE_OUTPUT,
     EMPTY_OUTPUT,
+    ERROR_WITH_NOTES_OVERLOAD,
 )
 
 
@@ -32,3 +33,18 @@ class TestParserIntegration:
         assert error.location.file == "tests/fixtures/sample_code/simple_error.py"
         assert error.location.line == 10
         assert error.error_code == "arg-type"
+    
+    def test_parse_error_with_associated_notes(self, parser: MypyOutputParser) -> None:
+        """Test parsing error with notes attached."""
+        results = parser.parse_output(ERROR_WITH_NOTES_OVERLOAD)
+        
+        assert len(results.diagnostics) == 2
+        assert results.files_checked == 1
+        
+        # Second error should have notes attached
+        overload_error = results.diagnostics[1]
+        assert overload_error.error_code == "call-overload"
+        assert len(overload_error.notes) == 3
+        assert "Possible overload variants:" in overload_error.notes[0]
+        assert "def process(x: int) -> str" in overload_error.notes[1]
+        assert "def process(x: str) -> int" in overload_error.notes[2]

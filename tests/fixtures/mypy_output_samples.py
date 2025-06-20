@@ -25,3 +25,11 @@ EMPTY_OUTPUT = """Success: no issues found in 1 source file"""
 
 # Multiple files checked, no errors
 MULTI_FILE_EMPTY = """Success: no issues found in 2 source files"""
+
+# Error with notes (overload)
+ERROR_WITH_NOTES_OVERLOAD = """tests/fixtures/sample_code/overload_error.py:12: error: Function is missing a type annotation  [no-untyped-def]
+tests/fixtures/sample_code/overload_error.py:20: error: No overload variant of "process" matches argument type "list[int]"  [call-overload]
+tests/fixtures/sample_code/overload_error.py:20: note: Possible overload variants:
+tests/fixtures/sample_code/overload_error.py:20: note:     def process(x: int) -> str
+tests/fixtures/sample_code/overload_error.py:20: note:     def process(x: str) -> int
+Found 2 errors in 1 file (checked 1 source file)"""
