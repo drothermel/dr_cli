@@ -214,3 +214,41 @@ Found 1 error in 1 file (checked 1 source file)"""
         assert diagnostic.location.line == 42
         assert diagnostic.message == "Something went wrong"
         assert diagnostic.level.value == "error"  # Normalized to lowercase
+
+    def test_create_with_minimal_output(self) -> None:
+        """Test creating parser with minimal output configuration."""
+        parser = MypyOutputParser.create_with_minimal_output()
+
+        assert parser.config.show_column_numbers is False
+        assert parser.config.show_error_end is False
+
+        # Should still parse normal output
+        results = parser.parse_output(SIMPLE_ERROR_OUTPUT)
+        assert len(results.diagnostics) == 1
+
+    def test_create_with_full_output(self) -> None:
+        """Test creating parser with full output configuration."""
+        parser = MypyOutputParser.create_with_full_output()
+
+        assert parser.config.show_column_numbers is True
+        assert parser.config.show_error_end is True
+
+        # Should still parse normal output
+        results = parser.parse_output(SIMPLE_ERROR_OUTPUT)
+        assert len(results.diagnostics) == 1
+
+    def test_detect_format_with_columns(self) -> None:
+        """Test format detection with column numbers."""
+        sample = """file.py:10:5: error: Message [code]
+file2.py:20:3: warning: Another message"""
+
+        config = MypyOutputParser.detect_format(sample)
+        assert config.show_column_numbers is True
+
+    def test_detect_format_without_columns(self) -> None:
+        """Test format detection without column numbers."""
+        sample = """file.py:10: error: Message [code]
+file2.py:20: warning: Another message"""
+
+        config = MypyOutputParser.detect_format(sample)
+        assert config.show_column_numbers is False

@@ -105,6 +105,42 @@ class MypyOutputParser:
         self.current_diagnostic: MypyDiagnostic | None = None
         self.parse_errors: list[ParseError] = []
 
+    @classmethod
+    def create_with_minimal_output(cls) -> "MypyOutputParser":
+        """Create parser for mypy with minimal output (no columns)."""
+        config = ParserConfig(show_column_numbers=False)
+        return cls(config)
+
+    @classmethod
+    def create_with_full_output(cls) -> "MypyOutputParser":
+        """Create parser for mypy with full output including end positions."""
+        config = ParserConfig(show_column_numbers=True, show_error_end=True)
+        return cls(config)
+
+    @classmethod
+    def detect_format(cls, sample_output: str) -> ParserConfig:
+        """Attempt to detect mypy output format from a sample.
+
+        Args:
+            sample_output: Sample mypy output to analyze.
+
+        Returns:
+            ParserConfig with detected settings.
+        """
+        config = ParserConfig()
+
+        # Check for column numbers (e.g., "file.py:10:5: error:")
+        # Match pattern with file:line:column: level
+        if re.search(r'\S+:\d+:\d+:\s*(error|warning)', sample_output):
+            config.show_column_numbers = True
+        else:
+            config.show_column_numbers = False
+
+        # Check for end positions (rare in standard mypy output)
+        # Would need specific patterns if mypy adds this feature
+
+        return config
+
     def _try_parse_diagnostic(self, line: str) -> "MypyDiagnostic | None":
         """Try to parse a diagnostic (error/warning) line."""
         # Use custom pattern if provided
