@@ -125,6 +125,17 @@ class MypyResults(BaseModel):
             f"(checked {self.files_checked} source {source_word})"
         )
 
+    def write_errors_as_jsonl(self, output_path: str) -> None:
+        """Write error diagnostics to a JSONL file."""
+        import json
+        from pathlib import Path
+
+        path = Path(output_path)
+        with path.open("w") as f:
+            for error in self.errors:
+                json_line = json.dumps(error.to_jsonl_dict())
+                f.write(json_line + "\n")
+
     @classmethod
     def merge(cls, results: list["MypyResults"]) -> "MypyResults":
         """Merge multiple MypyResults into a single combined result."""
