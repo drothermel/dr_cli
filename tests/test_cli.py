@@ -88,3 +88,51 @@ def test_check_with_mypy_returns_results(mock_api_run: MagicMock) -> None:
     assert isinstance(results, MypyResults)
     assert results.error_count == 0
     assert exit_code == 0
+
+
+@patch("dr_cli.typecheck.cli.Path.exists")
+@patch("dr_cli.typecheck.cli.check_with_mypy")
+@patch("dr_cli.typecheck.cli.TextFormatter")
+@patch("dr_cli.typecheck.cli.JsonlFormatter")
+def test_formatter_selection(
+    mock_jsonl_formatter: MagicMock,
+    mock_text_formatter: MagicMock,
+    mock_check_with_mypy: MagicMock,
+    mock_path_exists: MagicMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Test CLI formatter selection logic."""
+    # Mock path exists to return True
+    mock_path_exists.return_value = True
+
+    # Mock check results
+    mock_results = MagicMock()
+    mock_check_with_mypy.return_value = (mock_results, 0)
+
+    # Test text formatter selection (default)
+    monkeypatch.setattr("sys.argv", ["typecheck", "--no-daemon", "test.py"])
+
+    with pytest.raises(SystemExit):
+        main()
+
+    mock_text_formatter.assert_called_once()
+    mock_text_formatter.return_value.format_results.assert_called_once_with(
+        mock_results, None
+    )
+
+    # Reset mocks
+    mock_text_formatter.reset_mock()
+    mock_jsonl_formatter.reset_mock()
+
+    # Test jsonl formatter selection
+    monkeypatch.setattr(
+        "sys.argv", ["typecheck", "--no-daemon", "--output-format", "jsonl", "test.py"]
+    )
+
+    with pytest.raises(SystemExit):
+        main()
+
+    mock_jsonl_formatter.assert_called_once()
+    mock_jsonl_formatter.return_value.format_results.assert_called_once_with(
+        mock_results, None
+    )
