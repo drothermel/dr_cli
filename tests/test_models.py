@@ -1,3 +1,5 @@
+"""Tests for mypy output parser Pydantic models."""
+
 import pytest
 from pydantic import ValidationError
 from dr_cli.typecheck.models import (
@@ -10,12 +12,14 @@ from dr_cli.typecheck.models import (
 
 
 @pytest.fixture
-def sample_location():
+def sample_location() -> Location:
+    """Create a sample Location for testing."""
     return Location(file="test.py", line=10, column=5)
 
 
 @pytest.fixture
-def sample_error():
+def sample_error() -> MypyDiagnostic:
+    """Create a sample MypyDiagnostic with error level."""
     return MypyDiagnostic(
         location=Location(file="test.py", line=10),
         level=MessageLevel.ERROR,
@@ -25,7 +29,8 @@ def sample_error():
 
 
 @pytest.fixture
-def sample_warning():
+def sample_warning() -> MypyDiagnostic:
+    """Create a sample MypyDiagnostic with warning level."""
     return MypyDiagnostic(
         location=Location(file="test.py", line=20),
         level=MessageLevel.WARNING,
@@ -34,7 +39,7 @@ def sample_warning():
     )
 
 
-def test_diagnostic_accepts_error_level(sample_location):
+def test_diagnostic_accepts_error_level(sample_location: Location) -> None:
     """Test that MypyDiagnostic accepts ERROR level."""
     diagnostic = MypyDiagnostic(
         location=sample_location,
@@ -45,7 +50,7 @@ def test_diagnostic_accepts_error_level(sample_location):
     assert diagnostic.level == MessageLevel.ERROR
 
 
-def test_diagnostic_accepts_warning_level(sample_location):
+def test_diagnostic_accepts_warning_level(sample_location: Location) -> None:
     """Test that MypyDiagnostic accepts WARNING level."""
     diagnostic = MypyDiagnostic(
         location=sample_location,
@@ -56,7 +61,7 @@ def test_diagnostic_accepts_warning_level(sample_location):
     assert diagnostic.level == MessageLevel.WARNING
 
 
-def test_diagnostic_rejects_note_level(sample_location):
+def test_diagnostic_rejects_note_level(sample_location: Location) -> None:
     """Test that MypyDiagnostic rejects NOTE level with proper error."""
     with pytest.raises(ValidationError) as exc_info:
         MypyDiagnostic(
@@ -72,7 +77,7 @@ def test_diagnostic_rejects_note_level(sample_location):
     assert "Notes cannot be MypyDiagnostic instances" in errors[0]["msg"]
 
 
-def test_note_accepts_note_level(sample_location):
+def test_note_accepts_note_level(sample_location: Location) -> None:
     """Test that MypyNote accepts NOTE level."""
     note = MypyNote(
         location=sample_location, level=MessageLevel.NOTE, message="Test note"
@@ -81,7 +86,9 @@ def test_note_accepts_note_level(sample_location):
 
 
 @pytest.mark.parametrize("level", [MessageLevel.ERROR, MessageLevel.WARNING])
-def test_note_rejects_non_note_levels(sample_location, level):
+def test_note_rejects_non_note_levels(
+    sample_location: Location, level: MessageLevel
+) -> None:
     """Test that MypyNote rejects ERROR/WARNING levels."""
     with pytest.raises(ValidationError) as exc_info:
         MypyNote(location=sample_location, level=level, message="Test message")
@@ -93,7 +100,7 @@ def test_note_rejects_non_note_levels(sample_location, level):
 
 
 @pytest.fixture
-def sample_results():
+def sample_results() -> MypyResults:
     """Create MypyResults with mixed diagnostics."""
     error1 = MypyDiagnostic(
         location=Location(file="file1.py", line=10),
@@ -119,7 +126,9 @@ def sample_results():
     )
 
 
-def test_results_errors_property_filters_only_errors(sample_results):
+def test_results_errors_property_filters_only_errors(
+    sample_results: MypyResults,
+) -> None:
     """Test that errors property returns only ERROR diagnostics."""
     errors = sample_results.errors
 
@@ -129,7 +138,9 @@ def test_results_errors_property_filters_only_errors(sample_results):
     assert errors[1].message == "Second error"
 
 
-def test_results_warnings_property_filters_only_warnings(sample_results):
+def test_results_warnings_property_filters_only_warnings(
+    sample_results: MypyResults,
+) -> None:
     """Test that warnings property returns only WARNING diagnostics."""
     warnings = sample_results.warnings
 
@@ -138,17 +149,19 @@ def test_results_warnings_property_filters_only_warnings(sample_results):
     assert warnings[0].message == "First warning"
 
 
-def test_results_error_count_returns_correct_count(sample_results):
+def test_results_error_count_returns_correct_count(sample_results: MypyResults) -> None:
     """Test that error_count returns the correct number of errors."""
     assert sample_results.error_count == 2
 
 
-def test_results_warning_count_returns_correct_count(sample_results):
+def test_results_warning_count_returns_correct_count(
+    sample_results: MypyResults,
+) -> None:
     """Test that warning_count returns the correct number of warnings."""
     assert sample_results.warning_count == 1
 
 
-def test_results_counts_with_empty_diagnostics():
+def test_results_counts_with_empty_diagnostics() -> None:
     """Test count properties with no diagnostics."""
     empty_results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=0)
 
@@ -156,7 +169,9 @@ def test_results_counts_with_empty_diagnostics():
     assert empty_results.warning_count == 0
 
 
-def test_results_files_with_errors_deduplicates_files(sample_results):
+def test_results_files_with_errors_deduplicates_files(
+    sample_results: MypyResults,
+) -> None:
     """Test that files_with_errors deduplicates file names."""
     # sample_results has errors in file1.py and file2.py
     files_with_errors = sample_results.files_with_errors
@@ -166,7 +181,7 @@ def test_results_files_with_errors_deduplicates_files(sample_results):
     assert "file2.py" in files_with_errors
 
 
-def test_results_files_with_errors_excludes_warnings_only():
+def test_results_files_with_errors_excludes_warnings_only() -> None:
     """Test that files with only warnings don't appear in files_with_errors."""
     warning_only = MypyDiagnostic(
         location=Location(file="warning_file.py", line=10),
@@ -182,7 +197,7 @@ def test_results_files_with_errors_excludes_warnings_only():
     assert len(results.files_with_errors) == 0
 
 
-def test_results_files_with_errors_empty_case():
+def test_results_files_with_errors_empty_case() -> None:
     """Test files_with_errors with no diagnostics."""
     empty_results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=0)
 
@@ -190,7 +205,7 @@ def test_results_files_with_errors_empty_case():
 
 
 @pytest.mark.parametrize(
-    "error_count,warning_count,file_count,files_checked,expected",
+    ("error_count", "warning_count", "file_count", "files_checked", "expected"),
     [
         (0, 0, 0, 5, "Found 0 errors in 0 files (checked 5 source files)"),
         (1, 0, 1, 10, "Found 1 error in 1 file (checked 10 source files)"),
@@ -199,8 +214,12 @@ def test_results_files_with_errors_empty_case():
     ],
 )
 def test_format_summary_with_different_counts(
-    error_count, warning_count, file_count, files_checked, expected
-):
+    error_count: int,
+    warning_count: int,
+    file_count: int,
+    files_checked: int,
+    expected: str,
+) -> None:
     """Test format_summary with various error/warning/file counts."""
     # Create diagnostics to match the expected counts
     diagnostics = []
@@ -239,7 +258,7 @@ def test_format_summary_with_different_counts(
     assert results.format_summary() == expected
 
 
-def test_diagnostic_notes_initialization():
+def test_diagnostic_notes_initialization() -> None:
     """Test that diagnostic notes list is initialized correctly."""
     diagnostic = MypyDiagnostic(
         location=Location(file="test.py", line=10),
@@ -251,7 +270,7 @@ def test_diagnostic_notes_initialization():
     assert diagnostic.notes == []
 
 
-def test_diagnostic_with_notes():
+def test_diagnostic_with_notes() -> None:
     """Test diagnostic with notes added."""
     diagnostic = MypyDiagnostic(
         location=Location(file="test.py", line=10),
@@ -266,7 +285,7 @@ def test_diagnostic_with_notes():
     assert "Another note for context" in diagnostic.notes
 
 
-def test_diagnostic_notes_can_be_added():
+def test_diagnostic_notes_can_be_added() -> None:
     """Test that notes can be added to diagnostic after creation."""
     diagnostic = MypyDiagnostic(
         location=Location(file="test.py", line=10),
@@ -280,7 +299,7 @@ def test_diagnostic_notes_can_be_added():
     assert diagnostic.notes[0] == "Added note"
 
 
-def test_location_with_only_required_fields():
+def test_location_with_only_required_fields() -> None:
     """Test Location with only file and line (no column/end)."""
     location = Location(file="test.py", line=42)
 
@@ -291,7 +310,7 @@ def test_location_with_only_required_fields():
     assert location.end_column is None
 
 
-def test_location_with_column():
+def test_location_with_column() -> None:
     """Test Location with file, line, and column."""
     location = Location(file="test.py", line=42, column=13)
 
@@ -302,7 +321,7 @@ def test_location_with_column():
     assert location.end_column is None
 
 
-def test_location_with_end_position():
+def test_location_with_end_position() -> None:
     """Test Location with end line and column."""
     location = Location(file="test.py", line=42, column=13, end_line=43, end_column=20)
 
@@ -313,7 +332,9 @@ def test_location_with_end_position():
     assert location.end_column == 20
 
 
-def test_results_model_dump_includes_computed_properties(sample_results):
+def test_results_model_dump_includes_computed_properties(
+    sample_results: MypyResults,
+) -> None:
     """Test that model_dump includes computed properties."""
     data = sample_results.model_dump()
 
@@ -326,7 +347,9 @@ def test_results_model_dump_includes_computed_properties(sample_results):
     assert len(data["files_with_errors"]) == 2
 
 
-def test_results_json_serialization_includes_computed_fields(sample_results):
+def test_results_json_serialization_includes_computed_fields(
+    sample_results: MypyResults,
+) -> None:
     """Test that JSON serialization includes computed fields."""
     json_str = sample_results.model_dump_json()
 
@@ -336,7 +359,7 @@ def test_results_json_serialization_includes_computed_fields(sample_results):
     assert '"files_with_errors":[' in json_str
 
 
-def test_diagnostic_serialization():
+def test_diagnostic_serialization() -> None:
     """Test that MypyDiagnostic serializes correctly."""
     diagnostic = MypyDiagnostic(
         location=Location(file="test.py", line=10, column=5),
