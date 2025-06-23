@@ -1,5 +1,8 @@
 """Tests for mypy output parser Pydantic models."""
 
+import json
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 from dr_cli.typecheck.models import (
@@ -424,6 +427,81 @@ def test_diagnostic_to_jsonl_dict_without_column() -> None:
         "message": "Warning message",
         "error_code": "warn-code",
     }
+
+
+def test_results_write_errors_as_jsonl(
+    tmp_path: Path, sample_results: MypyResults
+) -> None:
+    """Test writing error diagnostics to JSONL file."""
+    output_file = tmp_path / "errors.jsonl"
+
+    sample_results.write_errors_as_jsonl(str(output_file))
+
+    # Verify file was created
+    assert output_file.exists()
+
+    # Read and verify content
+    lines = output_file.read_text().strip().split("\n")
+
+    # Should have 2 lines (2 errors from sample_results)
+    assert len(lines) == 2
+
+    # Parse and verify first error
+    first_error = json.loads(lines[0])
+    assert first_error["file"] == "file1.py"
+    assert first_error["line"] == 10
+    assert first_error["level"] == "error"
+    assert first_error["message"] == "First error"
+    assert first_error["error_code"] == "error-1"
+
+    # Parse and verify second error
+    second_error = json.loads(lines[1])
+    assert second_error["file"] == "file2.py"
+    assert second_error["line"] == 20
+    assert second_error["level"] == "error"
+    assert second_error["message"] == "Second error"
+    assert second_error["error_code"] == "error-2"
+
+
+def test_results_write_errors_as_jsonl_filters_warnings(tmp_path: Path) -> None:
+    """Test that write_errors_as_jsonl only writes errors, not warnings."""
+    # Create results with mix of errors and warnings
+    results = MypyResults(
+        diagnostics=[
+            MypyDiagnostic(
+                location=Location(file="test.py", line=1),
+                level=MessageLevel.ERROR,
+                message="An error",
+                error_code="error-1",
+            ),
+            MypyDiagnostic(
+                location=Location(file="test.py", line=2),
+                level=MessageLevel.WARNING,
+                message="A warning",
+                error_code="warn-1",
+            ),
+            MypyDiagnostic(
+                location=Location(file="test.py", line=3),
+                level=MessageLevel.ERROR,
+                message="Another error",
+                error_code="error-2",
+            ),
+        ],
+        standalone_notes=[],
+        files_checked=1,
+    )
+
+    output_file = tmp_path / "errors.jsonl"
+    results.write_errors_as_jsonl(str(output_file))
+
+    # Should only have 2 lines (errors only)
+    lines = output_file.read_text().strip().split("\n")
+    assert len(lines) == 2
+
+    # Verify no warnings in output
+    for line in lines:
+        data = json.loads(line)
+        assert data["level"] == "error"
 
 
 def test_parse_error_creation() -> None:
