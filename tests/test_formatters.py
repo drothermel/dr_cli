@@ -148,9 +148,51 @@ def test_jsonl_formatter_file_output(tmp_path: Path) -> None:
     # Verify file was created and contains expected content
     assert output_file.exists()
     lines = output_file.read_text().strip().split("\n")
-    assert len(lines) == 1
 
-    error_data = json.loads(lines[0])
+    # Should have metadata line + one error line
+    assert len(lines) == 2
+
+    # First line should be metadata
+    metadata = json.loads(lines[0])
+    assert metadata["type"] == "metadata"
+    assert metadata["error_count"] == 1
+
+    # Second line should be error
+    error_data = json.loads(lines[1])
     assert error_data["file"] == "test.py"
     assert error_data["line"] == 10
     assert error_data["level"] == "error"
+
+
+def test_jsonl_metadata(tmp_path: Path) -> None:
+    """Test JSONL error count metadata."""
+    # Create results with multiple errors
+    diagnostics = [
+        MypyDiagnostic(
+            location=Location(file="test1.py", line=1),
+            level=MessageLevel.ERROR,
+            message="Error 1",
+            error_code="test",
+        ),
+        MypyDiagnostic(
+            location=Location(file="test2.py", line=2),
+            level=MessageLevel.ERROR,
+            message="Error 2",
+            error_code="test",
+        ),
+    ]
+
+    results = MypyResults(diagnostics=diagnostics, standalone_notes=[], files_checked=2)
+    formatter = JsonlFormatter()
+
+    # Test with temp file
+    output_file = tmp_path / "test_metadata.jsonl"
+    formatter.format_results(results, str(output_file))
+
+    # Read and verify metadata
+    lines = output_file.read_text().strip().split("\n")
+
+    # Should have metadata + 2 errors
+    assert len(lines) == 3
+    metadata = json.loads(lines[0])
+    assert metadata["error_count"] == 2
