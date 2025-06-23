@@ -52,10 +52,21 @@ class JsonlFormatter(OutputFormatter):
     ) -> None:
         """Format error results as JSONL output."""
         if output_path:
-            # Write to file
-            results.write_errors_as_jsonl(output_path)
+            # Write to file with metadata
+            from pathlib import Path
+
+            path = Path(output_path)
+            with path.open("w") as f:
+                # Write error count metadata as first line
+                metadata = {"type": "metadata", "error_count": results.error_count}
+                f.write(json.dumps(metadata) + "\n")
+
+                # Write error lines
+                for error in results.errors:
+                    json_line = json.dumps(error.to_jsonl_dict())
+                    f.write(json_line + "\n")
         else:
-            # Write to stdout
+            # Write to stdout without metadata
             for error in results.errors:
                 json_line = json.dumps(error.to_jsonl_dict())
                 print(json_line)
