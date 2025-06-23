@@ -57,45 +57,72 @@ docstring-code-line-length = 72
 
 [tool.ruff.lint]
 extend-select = [
-    "F", "E", "W",          # core
+    # Use for precommit hooks
+    "A",                    # Variable and argument shadowing
     "B", "FBT003",          # bugbear criticals
-    "ARG", "ANN",           # api clarity
     "C4", "C90",            # perf / complexity
-    "D1", "D401",           # missing docstrings + “imperative mood”
-    "NPY", "PD", "PERF",    # data-science-specific
-    "PIE", "SIM",           # silent foot-guns
-    "PT", "TCH", "TID",     # pytest & typing hygiene
-    "RUF", "UP", "S",       # upgrades, security
-    "ERA",                  # commented out code
-    "PLE", "PLR", "PLW",    # complexity
-    "ICN001",               # import shortnames
+    "F821",                 # undefined name
+    "INP",                  # missing __init__.py
+    "N999",                 # pep8 avoid invalid module naming
+    "NPY", "PD",            # data-science-specific
+    "PERF",                 # unnecessary casts, bad iteration patterns
+    "PIE",                  # duplicate class field defs, etc
+    "PLE",                  # pylint errors
+    "PLW",                  # pylint warning
+    "PLR",                  # safe comparisons
+    "PT",                   # pytest
+    "PTH",                  # use pathlib not os.path
+    "RUF",                  # ruff internals
+    "S",                    # security
+    "SLF",                  # private member accessed outside class
+    "SIM",                  # simplify code
+    "T10",                  # no pdb in code
+    "TID",                  # tidy imports
+    "UP",                   # upgrades
+    "YTT",                  # correct comparisons to sys version
+
+    # Use the rest of the time
+    "ARG",                  # argumetns
+    "ANN",                  # api clarity
+    "COM",                  # training comma enforcement
+    "D",                    # docstring styling
+    "E",                    # indentation and spaceing
+    "F",                    # unused import or local variable
+    "FA",                   # future annotations
+    "FLY",                  # fstrings instead of string joins
+    "ICN",                  # specific import names
+    "W",                    # space normalization
 ]
 ignore = [
     "ARG001",               # callbacks
-    "ANN401",               # `Any` is pragmatic in tensors
-    "S101",                 # asserts for invariants
-    "FBT001", "FBT002",     # bool kwargs common
-    "TD002", "TD003",       # lightweight TODOs fine
     "COM812", "ISC001",     # Overlap with each other in formatting
+    "EXE",                  # Files generally don't need to be executable
+    "FBT001", "FBT002",     # bool kwargs common
+    "I",                    # sort imports: covered by ruff format
     "ICN002", "ICN003",     # import rules that are overly restrictive
+    "INT",                  # Gettext rules, unused
+    "ISC",                  # String concat rules, strict
+    "LOG",                  # logger usage, strict
     "PLR0913",              # Too many args, rough with ML code
+    "S101",                 # asserts for invariants
+    "TD",                   # TODOs are fine
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"**/__init__.py" = [
+    "D",
+]
 "tests/**/*.py" = [
     "ARG",                  # unused arguments in fixtures
     "PLR2004",              # Magic values are OK in tests
 ]
-"scripts/**/*.py" = [
+"**/scripts/**/*.py" = [
     "T201",                 # print() is fine in scripts
+    "D101", "D102", "D103", # don't require docstrings
 ]
 "*_notebook.py" = [
     "E402",                 # Import order OK in notebooks
     "F401",                 # Unused imports OK in notebooks
-]
-"**/__init__.py" = [
-    "D104",                 # Missing docstring in public package
-    "D103",                 # Missing docstring in public function
 ]  
 
 [tool.ruff.lint.mccabe]
