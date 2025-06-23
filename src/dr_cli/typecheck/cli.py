@@ -11,6 +11,7 @@ from collections.abc import Callable
 from mypy import api
 from .parser import MypyOutputParser
 from .models import MypyResults
+from .formatters import TextFormatter, JsonlFormatter
 
 
 def run_dmypy_safe(args: list[str]) -> tuple[str, str, int]:
@@ -204,12 +205,19 @@ def main() -> None:
 
     # Run type checking
     if args.no_daemon:
-        errors = check_with_mypy(paths, combined=combined)
+        results, exit_code = check_with_mypy(paths, combined=combined)
     else:
-        errors = check_with_daemon(paths, combined=combined)
+        results, exit_code = check_with_daemon(paths, combined=combined)
+
+    # Create formatter based on output format
+    formatter = JsonlFormatter() if args.output_format == "jsonl" else TextFormatter()
+
+    # Format and output results
+    output_path = str(args.output_file) if args.output_file else None
+    formatter.format_results(results, output_path)
 
     # Exit with error count
-    sys.exit(min(errors, 1))  # Exit 1 if any errors
+    sys.exit(min(exit_code, 1))  # Exit 1 if any errors
 
 
 if __name__ == "__main__":
