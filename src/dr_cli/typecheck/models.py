@@ -57,7 +57,7 @@ class MypyDiagnostic(MypyMessage):
 
 
 class MypyNote(MypyMessage):
-    """Standalone note (reveal_type, context headers, etc.)"""
+    """Standalone note (reveal_type, context headers, etc.)."""
 
     @field_validator("level")
     @classmethod

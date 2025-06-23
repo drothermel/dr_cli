@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""
-Advanced typecheck wrapper using mypy Python API.
+"""Advanced typecheck wrapper using mypy Python API.
+
 Supports both regular mypy and dmypy daemon mode.
 """
 
-import os
 import sys
 import argparse
+from pathlib import Path
 from mypy import api
 from .parser import MypyOutputParser
 from .models import MypyResults
@@ -45,9 +45,10 @@ def restart_daemon() -> None:
     run_dmypy_safe(["start"])
 
 
-def check_with_daemon(paths: list[str], retry_on_crash: bool = True, combined: bool = False) -> int:
+def check_with_daemon(
+    paths: list[str], retry_on_crash: bool = True, combined: bool = False
+) -> int:
     """Check paths using dmypy daemon."""
-
     # Verify daemon is running
     start_code = start_daemon()
     if start_code == 1:
@@ -56,7 +57,7 @@ def check_with_daemon(paths: list[str], retry_on_crash: bool = True, combined: b
     if combined:
         # Collect outputs from each path
         outputs = []
-        
+
         for path in paths:
             # Build command
             cmd = ["check"]
@@ -78,12 +79,12 @@ def check_with_daemon(paths: list[str], retry_on_crash: bool = True, combined: b
             # Collect output
             if stdout.strip():
                 outputs.append(stdout.strip())
-        
+
         # Parse and merge all outputs
         parser = MypyOutputParser()
         results_list = [parser.parse_output(output) for output in outputs]
         merged = MypyResults.merge(results_list)
-        
+
         # Print combined output
         for diag in merged.diagnostics:
             level = diag.level.value
@@ -93,16 +94,16 @@ def check_with_daemon(paths: list[str], retry_on_crash: bool = True, combined: b
             print(f"{loc.file}:{loc.line}{col}: {level}: {diag.message}{code}")
             for note in diag.notes:
                 print(f"  note: {note}")
-        
+
         # Print summary
         print(merged.format_summary())
-        
+
         return 1 if merged.error_count > 0 else 0
     else:
         # Original behavior - run on all paths at once
         cmd = ["check"]
         if paths != ["."]:
-            cmd.extend(["--"] + paths)
+            cmd.extend(["--", *paths])
         else:
             cmd.append(".")
 
@@ -131,20 +132,20 @@ def check_with_mypy(paths: list[str], combined: bool = False) -> int:
     if combined:
         # Collect outputs from each path
         outputs = []
-        
+
         for path in paths:
             # Run mypy
             stdout, stderr, exit_code = api.run([path])
-            
+
             # Collect output
             if stdout.strip():
                 outputs.append(stdout.strip())
-        
+
         # Parse and merge all outputs
         parser = MypyOutputParser()
         results_list = [parser.parse_output(output) for output in outputs]
         merged = MypyResults.merge(results_list)
-        
+
         # Print combined output
         for diag in merged.diagnostics:
             level = diag.level.value
@@ -154,10 +155,10 @@ def check_with_mypy(paths: list[str], combined: bool = False) -> int:
             print(f"{loc.file}:{loc.line}{col}: {level}: {diag.message}{code}")
             for note in diag.notes:
                 print(f"  note: {note}")
-        
+
         # Print summary
         print(merged.format_summary())
-        
+
         return 1 if merged.error_count > 0 else 0
     else:
         # Original behavior - run on all paths at once
@@ -186,14 +187,15 @@ def main() -> None:
     )
     parser.add_argument("--stop", action="store_true", help="Stop daemon and exit")
     parser.add_argument(
-        "--combined", 
-        action="store_true", 
-        help="Run each directory separately and combine results (default: True for multiple paths)"
+        "--combined",
+        action="store_true",
+        help="Run each directory separately and combine results "
+        "(default: True for multiple paths)",
     )
     parser.add_argument(
         "--no-combined",
         action="store_true",
-        help="Disable combined mode even with multiple paths"
+        help="Disable combined mode even with multiple paths",
     )
 
     args = parser.parse_args()
@@ -206,7 +208,7 @@ def main() -> None:
 
     # Filter valid paths
     if args.paths:
-        paths = [p for p in args.paths if os.path.exists(p)]
+        paths = [p for p in args.paths if Path(p).exists()]
         if not paths:
             print("No valid paths provided", file=sys.stderr)
             sys.exit(1)
@@ -221,7 +223,7 @@ def main() -> None:
     # Determine if we should use combined mode
     # Default to combined when multiple paths provided
     combined = args.combined or (len(paths) > 1 and not args.no_combined)
-    
+
     # Run type checking
     if args.no_daemon:
         errors = check_with_mypy(paths, combined=combined)

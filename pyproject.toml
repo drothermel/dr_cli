@@ -117,6 +117,7 @@ ignore = [
 "tests/**/*.py" = [
     "ARG",                  # unused arguments in fixtures
     "PLR2004",              # Magic values are OK in tests
+    "SLF001",               # Private member access is OK in tests
 ]
 "**/scripts/**/*.py" = [
     "T201",                 # print() is fine in scripts
