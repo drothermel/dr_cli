@@ -57,12 +57,21 @@ class MypyNote(MypyMessage):
         return v
 
 
+class ParseError(BaseModel):
+    """Represents a line that could not be parsed."""
+
+    line_number: int
+    line_content: str
+    reason: str | None = None
+
+
 class MypyResults(BaseModel):
     """Aggregated results from type checking."""
 
     diagnostics: list[MypyDiagnostic]
     standalone_notes: list[MypyNote]
     files_checked: int
+    parse_errors: list[ParseError] = Field(default_factory=list)
 
     @computed_field
     @property
