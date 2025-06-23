@@ -47,12 +47,16 @@ def restart_daemon() -> None:
 
 def check_with_daemon(
     paths: list[str], retry_on_crash: bool = True, combined: bool = False
-) -> int:
-    """Check paths using dmypy daemon."""
+) -> tuple[MypyResults, int]:
+    """Check paths using dmypy daemon, returning results and exit code."""
     # Verify daemon is running
     start_code = start_daemon()
     if start_code == 1:
-        return start_code
+        # Return empty results with error code
+        empty_results = MypyResults(
+            diagnostics=[], standalone_notes=[], files_checked=0
+        )
+        return empty_results, start_code
 
     if combined:
         # Collect outputs from each path
@@ -85,20 +89,9 @@ def check_with_daemon(
         results_list = [parser.parse_output(output) for output in outputs]
         merged = MypyResults.merge(results_list)
 
-        # Print combined output
-        for diag in merged.diagnostics:
-            level = diag.level.value
-            loc = diag.location
-            code = f" [{diag.error_code}]" if diag.error_code else ""
-            col = f":{loc.column}" if loc.column else ""
-            print(f"{loc.file}:{loc.line}{col}: {level}: {diag.message}{code}")
-            for note in diag.notes:
-                print(f"  note: {note}")
-
-        # Print summary
-        print(merged.format_summary())
-
-        return 1 if merged.error_count > 0 else 0
+        # Return results and exit code
+        exit_code = 1 if merged.error_count > 0 else 0
+        return merged, exit_code
     else:
         # Original behavior - run on all paths at once
         cmd = ["check"]
@@ -118,17 +111,22 @@ def check_with_daemon(
             restart_daemon()
             stdout, stderr, exit_code = run_dmypy_safe(cmd)
 
-        # Print output
+        # Parse output
+        parser = MypyOutputParser()
         if stdout.strip():
-            print(stdout.strip())
-        if stderr.strip():
-            print(stderr.strip(), file=sys.stderr)
+            results = parser.parse_output(stdout.strip())
+        else:
+            # No output means no errors
+            results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=1)
 
-        return 1 if exit_code != 0 else 0
+        # Return results and exit code
+        return results, 1 if exit_code != 0 else 0
 
 
-def check_with_mypy(paths: list[str], combined: bool = False) -> int:
-    """Check paths using regular mypy (no daemon)."""
+def check_with_mypy(
+    paths: list[str], combined: bool = False
+) -> tuple[MypyResults, int]:
+    """Check paths using regular mypy (no daemon), returning results and exit code."""
     if combined:
         # Collect outputs from each path
         outputs = []
@@ -146,31 +144,23 @@ def check_with_mypy(paths: list[str], combined: bool = False) -> int:
         results_list = [parser.parse_output(output) for output in outputs]
         merged = MypyResults.merge(results_list)
 
-        # Print combined output
-        for diag in merged.diagnostics:
-            level = diag.level.value
-            loc = diag.location
-            code = f" [{diag.error_code}]" if diag.error_code else ""
-            col = f":{loc.column}" if loc.column else ""
-            print(f"{loc.file}:{loc.line}{col}: {level}: {diag.message}{code}")
-            for note in diag.notes:
-                print(f"  note: {note}")
-
-        # Print summary
-        print(merged.format_summary())
-
-        return 1 if merged.error_count > 0 else 0
+        # Return results and exit code
+        exit_code = 1 if merged.error_count > 0 else 0
+        return merged, exit_code
     else:
         # Original behavior - run on all paths at once
         stdout, stderr, exit_code = api.run(paths)
 
-        # Print output
+        # Parse output
+        parser = MypyOutputParser()
         if stdout.strip():
-            print(stdout.strip())
-        if stderr.strip():
-            print(stderr.strip(), file=sys.stderr)
+            results = parser.parse_output(stdout.strip())
+        else:
+            # No output means no errors
+            results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=1)
 
-        return 1 if exit_code != 0 else 0
+        # Return results and exit code
+        return results, 1 if exit_code != 0 else 0
 
 
 def main() -> None:
