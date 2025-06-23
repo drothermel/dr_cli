@@ -7,6 +7,7 @@ Supports both regular mypy and dmypy daemon mode.
 import sys
 import argparse
 from pathlib import Path
+from collections.abc import Callable
 from mypy import api
 from .parser import MypyOutputParser
 from .models import MypyResults
@@ -45,6 +46,54 @@ def restart_daemon() -> None:
     run_dmypy_safe(["start"])
 
 
+def parse_mypy_output(stdout: str, default_files_checked: int = 1) -> MypyResults:
+    """Parse mypy output into MypyResults."""
+    parser = MypyOutputParser()
+    if stdout.strip():
+        return parser.parse_output(stdout.strip())
+    else:
+        # No output means no errors
+        return MypyResults(
+            diagnostics=[], standalone_notes=[], files_checked=default_files_checked
+        )
+
+
+def run_type_check(
+    paths: list[str],
+    runner: Callable[[list[str]], tuple[str, str, int]],
+    combined: bool = False,
+) -> tuple[MypyResults, int]:
+    """Run type checking with the given runner function."""
+    if combined:
+        # Collect outputs from each path
+        outputs = []
+
+        for path in paths:
+            stdout, stderr, exit_code = runner([path])
+
+            # Collect output
+            if stdout.strip():
+                outputs.append(stdout.strip())
+
+        # Parse and merge all outputs
+        parser = MypyOutputParser()
+        results_list = [parser.parse_output(output) for output in outputs]
+        merged = MypyResults.merge(results_list)
+
+        # Return results and exit code
+        exit_code = 1 if merged.error_count > 0 else 0
+        return merged, exit_code
+    else:
+        # Original behavior - run on all paths at once
+        stdout, stderr, exit_code = runner(paths)
+
+        # Parse output
+        results = parse_mypy_output(stdout)
+
+        # Return results and exit code
+        return results, 1 if exit_code != 0 else 0
+
+
 def check_with_daemon(
     paths: list[str], retry_on_crash: bool = True, combined: bool = False
 ) -> tuple[MypyResults, int]:
@@ -58,45 +107,12 @@ def check_with_daemon(
         )
         return empty_results, start_code
 
-    if combined:
-        # Collect outputs from each path
-        outputs = []
-
-        for path in paths:
-            # Build command
-            cmd = ["check"]
-            if path != ".":
-                cmd.extend(["--", path])
-            else:
-                cmd.append(".")
-
-            # Run check
-            stdout, stderr, exit_code = run_dmypy_safe(cmd)
-
-            # Handle crashes
-            if retry_on_crash and (
-                "Daemon crashed" in stdout + stderr or "KeyError" in stdout + stderr
-            ):
-                restart_daemon()
-                stdout, stderr, exit_code = run_dmypy_safe(cmd)
-
-            # Collect output
-            if stdout.strip():
-                outputs.append(stdout.strip())
-
-        # Parse and merge all outputs
-        parser = MypyOutputParser()
-        results_list = [parser.parse_output(output) for output in outputs]
-        merged = MypyResults.merge(results_list)
-
-        # Return results and exit code
-        exit_code = 1 if merged.error_count > 0 else 0
-        return merged, exit_code
-    else:
-        # Original behavior - run on all paths at once
+    def dmypy_runner(check_paths: list[str]) -> tuple[str, str, int]:
+        """Run dmypy check with crash handling."""
+        # Build command
         cmd = ["check"]
-        if paths != ["."]:
-            cmd.extend(["--", *paths])
+        if check_paths != ["."]:
+            cmd.extend(["--", *check_paths])
         else:
             cmd.append(".")
 
@@ -107,60 +123,21 @@ def check_with_daemon(
         if retry_on_crash and (
             "Daemon crashed" in stdout + stderr or "KeyError" in stdout + stderr
         ):
-            print("Retrying after daemon crash...")
+            if not combined:
+                print("Retrying after daemon crash...")
             restart_daemon()
             stdout, stderr, exit_code = run_dmypy_safe(cmd)
 
-        # Parse output
-        parser = MypyOutputParser()
-        if stdout.strip():
-            results = parser.parse_output(stdout.strip())
-        else:
-            # No output means no errors
-            results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=1)
+        return stdout, stderr, exit_code
 
-        # Return results and exit code
-        return results, 1 if exit_code != 0 else 0
+    return run_type_check(paths, dmypy_runner, combined=combined)
 
 
 def check_with_mypy(
     paths: list[str], combined: bool = False
 ) -> tuple[MypyResults, int]:
     """Check paths using regular mypy (no daemon), returning results and exit code."""
-    if combined:
-        # Collect outputs from each path
-        outputs = []
-
-        for path in paths:
-            # Run mypy
-            stdout, stderr, exit_code = api.run([path])
-
-            # Collect output
-            if stdout.strip():
-                outputs.append(stdout.strip())
-
-        # Parse and merge all outputs
-        parser = MypyOutputParser()
-        results_list = [parser.parse_output(output) for output in outputs]
-        merged = MypyResults.merge(results_list)
-
-        # Return results and exit code
-        exit_code = 1 if merged.error_count > 0 else 0
-        return merged, exit_code
-    else:
-        # Original behavior - run on all paths at once
-        stdout, stderr, exit_code = api.run(paths)
-
-        # Parse output
-        parser = MypyOutputParser()
-        if stdout.strip():
-            results = parser.parse_output(stdout.strip())
-        else:
-            # No output means no errors
-            results = MypyResults(diagnostics=[], standalone_notes=[], files_checked=1)
-
-        # Return results and exit code
-        return results, 1 if exit_code != 0 else 0
+    return run_type_check(paths, api.run, combined=combined)
 
 
 def main() -> None:
