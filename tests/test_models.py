@@ -382,6 +382,50 @@ def test_diagnostic_serialization() -> None:
     assert data["notes"] == ["Test note"]
 
 
+def test_diagnostic_to_jsonl_dict() -> None:
+    """Test MypyDiagnostic to_jsonl_dict method for JSONL serialization."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="test.py", line=10, column=5),
+        level=MessageLevel.ERROR,
+        message="Test error message",
+        error_code="test-error",
+        notes=["Test note 1", "Test note 2"],
+    )
+
+    result = diagnostic.to_jsonl_dict()
+
+    # Should include basic fields but not notes
+    assert result == {
+        "file": "test.py",
+        "line": 10,
+        "column": 5,
+        "level": "error",
+        "message": "Test error message",
+        "error_code": "test-error",
+    }
+
+
+def test_diagnostic_to_jsonl_dict_without_column() -> None:
+    """Test to_jsonl_dict when diagnostic has no column number."""
+    diagnostic = MypyDiagnostic(
+        location=Location(file="module.py", line=42),
+        level=MessageLevel.WARNING,
+        message="Warning message",
+        error_code="warn-code",
+    )
+
+    result = diagnostic.to_jsonl_dict()
+
+    assert result == {
+        "file": "module.py",
+        "line": 42,
+        "column": None,
+        "level": "warning",
+        "message": "Warning message",
+        "error_code": "warn-code",
+    }
+
+
 def test_parse_error_creation() -> None:
     """Test ParseError model creation."""
     error = ParseError(
