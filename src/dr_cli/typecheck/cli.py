@@ -197,6 +197,17 @@ def main() -> None:
         action="store_true",
         help="Disable combined mode even with multiple paths",
     )
+    parser.add_argument(
+        "--output-format",
+        choices=["text", "jsonl"],
+        default="text",
+        help="Output format (default: text)",
+    )
+    parser.add_argument(
+        "--output-file",
+        type=Path,
+        help="File to write output (JSONL format only)",
+    )
 
     args = parser.parse_args()
 
