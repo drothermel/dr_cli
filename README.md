@@ -10,6 +10,7 @@ A Python library for parsing and analyzing mypy type checker output, built with 
 - **Custom Patterns**: Override regex patterns for non-standard formats
 - **Debug Mode**: Built-in debugging to troubleshoot parsing issues
 - **Type-Safe**: Full type annotations with strict mypy checking
+- **JSONL Export**: Export errors as JSONL for integration with other tools
 
 ## Installation
 
@@ -55,6 +56,12 @@ dr-typecheck --restart src
 
 # Stop daemon
 dr-typecheck --stop
+
+# Output in JSONL format for integration
+dr-typecheck --output-format jsonl src
+
+# Save JSONL output to file
+dr-typecheck --output-format jsonl --output-file errors.jsonl src
 ```
 
 ### Features
@@ -64,6 +71,7 @@ dr-typecheck --stop
 - **Automatic retry**: Handles daemon crashes gracefully
 - **Combined mode**: When checking multiple paths, runs each independently and combines results
 - **Parser integration**: Uses the mypy output parser to merge results from multiple directories
+- **JSONL output**: Export errors in JSONL format for integration with other tools
 
 ### Combined Mode
 
@@ -73,6 +81,49 @@ When checking multiple directories, `dr-typecheck` automatically uses combined m
 - A unified summary shows total errors across all directories
 
 Note: dmypy prints status messages like ">> Checking:" that cannot be suppressed. For cleaner output, use `--no-daemon`.
+
+### Output Formats
+
+The `dr-typecheck` command supports multiple output formats:
+
+#### Text Output (Default)
+Standard mypy-style text output with diagnostic messages and summary:
+
+```bash
+dr-typecheck src/
+# Output:
+# src/module.py:42:13: error: Incompatible types [assignment]
+# Found 1 error in 1 file (checked 10 source files)
+```
+
+#### JSONL Output
+Export errors as JSON Lines format for integration with other tools:
+
+```bash
+# Output to stdout
+dr-typecheck --output-format jsonl src/
+# Output:
+# {"type": "metadata", "error_count": 1}
+# {"file": "src/module.py", "line": 42, "column": 13, "level": "error", "message": "Incompatible types", "error_code": "assignment"}
+
+# Save to file
+dr-typecheck --output-format jsonl --output-file errors.jsonl src/
+```
+
+**JSONL Features:**
+- **Errors only**: Excludes warnings and notes for cleaner integration
+- **Metadata**: Files include error count as first line for validation
+- **Structured**: Each error is a JSON object with consistent fields
+- **Tool-friendly**: Easy to process with `jq`, data pipelines, or CI systems
+
+**Example with jq:**
+```bash
+# Count errors by file
+dr-typecheck --output-format jsonl src/ | jq -r 'select(.file) | .file' | sort | uniq -c
+
+# Get errors from specific file
+dr-typecheck --output-format jsonl src/ | jq -r 'select(.file == "src/module.py")'
+```
 
 ### Example Usage in Another Project
 
@@ -243,6 +294,37 @@ for diag in results.diagnostics:
     for note in diag.notes:
         print(f"  Note: {note}")
 ```
+
+### JSONL Export
+
+Export results as JSONL (JSON Lines) format for integration with other tools:
+
+```python
+from dr_cli.typecheck.parser import MypyOutputParser
+from dr_cli.typecheck.formatters import JsonlFormatter
+
+# Parse mypy output
+parser = MypyOutputParser()
+results = parser.parse_output(mypy_output)
+
+# Export to JSONL file
+formatter = JsonlFormatter()
+formatter.format_results(results, "errors.jsonl")
+
+# Or work with individual error dictionaries
+for error in results.errors:
+    json_dict = error.to_jsonl_dict()
+    print(json_dict)
+    # Output: {"file": "src/test.py", "line": 10, "column": 5, 
+    #          "level": "error", "message": "...", "error_code": "..."}
+```
+
+**JSONL Format Details:**
+- Each line is a valid JSON object
+- First line contains metadata: `{"type": "metadata", "error_count": N}`
+- Subsequent lines are error objects with fields: `file`, `line`, `column`, `level`, `message`, `error_code`
+- Only errors are included (warnings and notes are excluded)
+- Compatible with streaming JSON processors and data pipelines
 
 ## Development
 

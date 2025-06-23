@@ -44,9 +44,20 @@ class MypyDiagnostic(MypyMessage):
             raise ValueError("Notes cannot be MypyDiagnostic instances")
         return v
 
+    def to_jsonl_dict(self) -> dict[str, str | int | None]:
+        """Convert diagnostic to flat dict for JSONL output (excludes notes)."""
+        return {
+            "file": self.location.file,
+            "line": self.location.line,
+            "column": self.location.column,
+            "level": self.level.value,
+            "message": self.message,
+            "error_code": self.error_code,
+        }
+
 
 class MypyNote(MypyMessage):
-    """Standalone note (reveal_type, context headers, etc.)"""
+    """Standalone note (reveal_type, context headers, etc.)."""
 
     @field_validator("level")
     @classmethod
@@ -114,27 +125,38 @@ class MypyResults(BaseModel):
             f"(checked {self.files_checked} source {source_word})"
         )
 
+    def write_errors_as_jsonl(self, output_path: str) -> None:
+        """Write error diagnostics to a JSONL file."""
+        import json
+        from pathlib import Path
+
+        path = Path(output_path)
+        with path.open("w") as f:
+            for error in self.errors:
+                json_line = json.dumps(error.to_jsonl_dict())
+                f.write(json_line + "\n")
+
     @classmethod
     def merge(cls, results: list["MypyResults"]) -> "MypyResults":
         """Merge multiple MypyResults into a single combined result."""
         if not results:
             return cls(diagnostics=[], standalone_notes=[], files_checked=0)
-        
+
         if len(results) == 1:
             return results[0]
-        
+
         # Combine all diagnostics, notes, and errors
         all_diagnostics = []
         all_notes = []
         all_parse_errors = []
         total_files = 0
-        
+
         for result in results:
             all_diagnostics.extend(result.diagnostics)
             all_notes.extend(result.standalone_notes)
             all_parse_errors.extend(result.parse_errors)
             total_files += result.files_checked
-        
+
         return cls(
             diagnostics=all_diagnostics,
             standalone_notes=all_notes,
