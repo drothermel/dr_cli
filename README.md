@@ -21,6 +21,69 @@ uv add dr_cli
 pip install dr_cli
 ```
 
+### Installing as a Global Tool
+
+The package includes a global `dr-typecheck` command that can be installed with uv:
+
+```bash
+# From this repository
+uv tool install .
+
+# Or from a path
+uv tool install /path/to/dr_cli
+
+# Upgrade later
+uv tool upgrade dr-cli
+```
+
+## Using dr-typecheck
+
+The `dr-typecheck` command is an advanced wrapper around mypy that supports both regular mypy and dmypy daemon mode:
+
+```bash
+# Check multiple directories
+dr-typecheck src scripts tests
+
+# Check current directory
+dr-typecheck
+
+# Use regular mypy instead of daemon
+dr-typecheck --no-daemon src tests
+
+# Restart daemon before checking
+dr-typecheck --restart src
+
+# Stop daemon
+dr-typecheck --stop
+```
+
+### Features
+
+- **Daemon mode by default**: Uses dmypy for faster incremental type checking
+- **Multiple paths**: Check multiple directories in one command
+- **Automatic retry**: Handles daemon crashes gracefully
+- **Combined mode**: When checking multiple paths, runs each independently and combines results
+- **Parser integration**: Uses the mypy output parser to merge results from multiple directories
+
+### Combined Mode
+
+When checking multiple directories, `dr-typecheck` automatically uses combined mode:
+- Each directory is checked independently (failures in one don't prevent checking others)
+- Results are parsed and merged using the mypy output parser
+- A unified summary shows total errors across all directories
+
+Note: dmypy prints status messages like ">> Checking:" that cannot be suppressed. For cleaner output, use `--no-daemon`.
+
+### Example Usage in Another Project
+
+```bash
+cd /path/to/your/project
+dr-typecheck src scripts tests
+
+# For cleaner output without status messages
+dr-typecheck --no-daemon src scripts tests
+```
+
 ## Quick Start
 
 ```python
@@ -219,8 +282,8 @@ uv run ruff check --fix
 # Format code
 uv run ruff format
 
-# Type checking
-uv run python scripts/typecheck.py
+# Type checking (if not installed globally)
+uv run python -m dr_cli.typecheck
 ```
 
 ## License

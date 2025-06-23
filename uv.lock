@@ -67,6 +67,7 @@ name = "dr-cli"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "mypy" },
     { name = "pydantic" },
 ]
 
@@ -101,7 +102,10 @@ test-ml = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "pydantic", specifier = ">=2.11.7" }]
+requires-dist = [
+    { name = "mypy", specifier = ">=1.16.0" },
+    { name = "pydantic", specifier = ">=2.11.7" },
+]
 
 [package.metadata.requires-dev]
 all = [
