@@ -1,5 +1,6 @@
 """Output formatters for mypy type checking results."""
 
+import json
 from abc import ABC, abstractmethod
 from dr_cli.typecheck.models import MypyResults
 
@@ -41,3 +42,20 @@ class TextFormatter(OutputFormatter):
 
         # Print summary
         print(results.format_summary())
+
+
+class JsonlFormatter(OutputFormatter):
+    """Formatter for JSONL output (errors only)."""
+
+    def format_results(
+        self, results: MypyResults, output_path: str | None = None
+    ) -> None:
+        """Format error results as JSONL output."""
+        if output_path:
+            # Write to file
+            results.write_errors_as_jsonl(output_path)
+        else:
+            # Write to stdout
+            for error in results.errors:
+                json_line = json.dumps(error.to_jsonl_dict())
+                print(json_line)
