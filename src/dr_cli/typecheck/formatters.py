@@ -1,6 +1,7 @@
 """Output formatters for mypy type checking results."""
 
 import json
+import sys
 from abc import ABC, abstractmethod
 from dr_cli.typecheck.models import MypyResults
 
@@ -55,16 +56,23 @@ class JsonlFormatter(OutputFormatter):
             # Write to file with metadata
             from pathlib import Path
 
-            path = Path(output_path)
-            with path.open("w") as f:
-                # Write error count metadata as first line
-                metadata = {"type": "metadata", "error_count": results.error_count}
-                f.write(json.dumps(metadata) + "\n")
+            try:
+                path = Path(output_path)
+                with path.open("w") as f:
+                    # Write error count metadata as first line
+                    metadata = {"type": "metadata", "error_count": results.error_count}
+                    f.write(json.dumps(metadata) + "\n")
 
-                # Write error lines
+                    # Write error lines
+                    for error in results.errors:
+                        json_line = json.dumps(error.to_jsonl_dict())
+                        f.write(json_line + "\n")
+            except (OSError, PermissionError) as e:
+                print(f"Error writing to {output_path}: {e}", file=sys.stderr)
+                # Fall back to stdout
                 for error in results.errors:
                     json_line = json.dumps(error.to_jsonl_dict())
-                    f.write(json_line + "\n")
+                    print(json_line)
         else:
             # Write to stdout without metadata
             for error in results.errors:
