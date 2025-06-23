@@ -3,6 +3,11 @@
 ## Overview
 Interleaved implementation and testing plan for adding JSONL output format to dr_cli typecheck command. Each implementation commit is immediately followed by its corresponding test commit, ensuring continuous verification.
 
+**Note**: The typecheck CLI module currently has no test coverage. This implementation will be adding the first tests for this module, which means:
+- No existing tests will break
+- We're establishing test patterns for future development
+- We'll add tests for existing behavior to ensure backward compatibility
+
 ## Implementation & Testing Sequence
 
 ### Phase 1: Model Enhancements
