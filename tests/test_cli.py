@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock
 
-from dr_cli.typecheck.cli import main, check_with_daemon
+from dr_cli.typecheck.cli import main, check_with_daemon, check_with_mypy
 from dr_cli.typecheck.models import MypyResults
 
 
@@ -56,6 +56,34 @@ def test_check_with_daemon_returns_results(
     # Test successful case
     mock_run_dmypy.return_value = ("", "", 0)
     results, exit_code = check_with_daemon(["test.py"])
+
+    assert isinstance(results, MypyResults)
+    assert results.error_count == 0
+    assert exit_code == 0
+
+
+@patch("dr_cli.typecheck.cli.api.run")
+def test_check_with_mypy_returns_results(mock_api_run: MagicMock) -> None:
+    """Test that check_with_mypy returns MypyResults and exit code."""
+    # Mock mypy output with errors
+    mock_api_run.return_value = (
+        "test.py:1: error: Incompatible types [assignment]",
+        "",
+        1,
+    )
+
+    # Call function
+    results, exit_code = check_with_mypy(["test.py"])
+
+    # Verify results object
+    assert isinstance(results, MypyResults)
+    assert results.error_count == 1
+    assert len(results.errors) == 1
+    assert exit_code == 1
+
+    # Test successful case
+    mock_api_run.return_value = ("", "", 0)
+    results, exit_code = check_with_mypy(["test.py"])
 
     assert isinstance(results, MypyResults)
     assert results.error_count == 0
