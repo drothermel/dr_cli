@@ -113,3 +113,31 @@ class MypyResults(BaseModel):
             f"Found {self.error_count} {error_word} in {num_files} {file_word} "
             f"(checked {self.files_checked} source {source_word})"
         )
+
+    @classmethod
+    def merge(cls, results: list["MypyResults"]) -> "MypyResults":
+        """Merge multiple MypyResults into a single combined result."""
+        if not results:
+            return cls(diagnostics=[], standalone_notes=[], files_checked=0)
+        
+        if len(results) == 1:
+            return results[0]
+        
+        # Combine all diagnostics, notes, and errors
+        all_diagnostics = []
+        all_notes = []
+        all_parse_errors = []
+        total_files = 0
+        
+        for result in results:
+            all_diagnostics.extend(result.diagnostics)
+            all_notes.extend(result.standalone_notes)
+            all_parse_errors.extend(result.parse_errors)
+            total_files += result.files_checked
+        
+        return cls(
+            diagnostics=all_diagnostics,
+            standalone_notes=all_notes,
+            files_checked=total_files,
+            parse_errors=all_parse_errors,
+        )
